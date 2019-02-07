@@ -1,8 +1,8 @@
 # Candy-Cane
 RNN-LTSM to predict deferment on synthetic oil-well data.
 
-###OG.PY is the script that cleans the original excel file (og.xlsx).###
-During the data preprocessing phase we:
+###OG.PY is the script that cleans the original excel file (og.xlsx).
+###During the data preprocessing phase we:
 1) Performed exploratory data analysis.
 2) Searched for Na's or missing data.
 3) Renamed columns to have no spaces to make querying easier.
