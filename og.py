@@ -13,6 +13,9 @@ import pandas as pd
 import numpy as np
 from pandas import Series,DataFrame
 from sklearn.linear_model import LogisticRegression
+import matplotlib.pyplot as plt
+
+
 ###
 
 ### read in excel
@@ -54,42 +57,32 @@ ogclean = og.drop(columns = ['Name','Type', 'CasingBPressure'])
 #print(ogcleanhead)
 #the columns were successfully dropped
 
+#get rid of the "time is invalid" by replacing them with last value (this way it does not delete from the time series
+ogclean.loc[ogclean['FlowlinePressure'] == "The time is invalid."] = "585.009460449219"
+ogclean.loc[ogclean['CasingAPressure'] == "The time is invalid."] = "1777.83874511719"
+ogclean.loc[ogclean['FlowlineTemperature'] == "The time is invalid."] = "80.6008224487305"
+ogclean.loc[ogclean['Volume'] == "The time is invalid"] = "7702.91845703125"
+ogclean.loc[ogclean['WellheadTubingPressure'] == "The time is invalid"] = "847.973266601563"
 
-#get rid of the "time is invalid"
-ogclean1 = ogclean[ogclean.WellheadTubingPressure != "The time is invalid."]
-ogclean1 = ogclean[ogclean.Volume != "The time is invalid."]
-ogclean1 = ogclean[ogclean.CasingAPressure != "The time is invalid."]
-ogclean1 = ogclean[ogclean.FlowlinePressure != "The time is invalid."]
-ogclean1 = ogclean[ogclean.FlowlineTemperature != "The time is invalid."]
 
-#get rid of "no available data"
-ogclean2 = ogclean1[ogclean1.WellheadTubingPressure != "No Available Data"]
-ogclean2 = ogclean1[ogclean1.Volume != "No Available Data"]
-ogclean2 = ogclean1[ogclean1.CasingAPressure != "No Available Data"]
-ogclean2 = ogclean1[ogclean1.FlowlinePressure != "No Available Data"]
-ogclean2 = ogclean1[ogclean1.FlowlineTemperature != "No Available Data"]
+ogclean = ogclean.iloc[54425:,]
 
 #change everything to float for calculations
-ogclean2['WellheadTubingPressure'] = ogclean2.WellheadTubingPressure.astype(float)
-ogclean2['Volume'] = ogclean2.Volume.astype(float)
-ogclean2['CasingAPressure'] = ogclean2.CasingAPressure.astype(float)
-ogclean2['FlowlinePressure'] = ogclean2.FlowlinePressure.astype(float)
-ogclean2['FlowlineTemperature'] = ogclean2.FlowlineTemperature.astype(float)
+ogclean['WellheadTubingPressure'] = ogclean.WellheadTubingPressure.astype(float)
+ogclean['Volume'] = ogclean.Volume.astype(float)
+ogclean['CasingAPressure'] = ogclean.CasingAPressure.astype(float)
+ogclean['FlowlinePressure'] = ogclean.FlowlinePressure.astype(float)
+ogclean['FlowlineTemperature'] = ogclean.FlowlineTemperature.astype(float)
 
-#word = "The time is invalid." #this approach might or might not work
-#ogclean = ogclean[~ogclean.str.contains("The time is invalid.")]
-#ogclean1 = ogclean[~ogclean.WellheadTubingPressure.str.contains(word)]
-#ogclean1 = ogclean[~ogclean.Volume.str.contains(word)]
-#ogclean1 = ogclean[~ogclean.CasingAPressure.str.contains(word)]
-#ogclean1 = ogclean[~ogclean.FlowlinePressure.str.contains(word)]
-#ogclean1 = ogclean[~ogclean.FlowlineTemperature.str.contains(word)]
+#get rid of negatives in flowlinepressure!!!
+ogclean.loc[ogclean['FlowlinePressure']<0] = 0
 
-#statistics on clean data starting where volumes starts. (row 54,425) - this eliminates are negatives from Casing and Tubing Pressure bc it is before the well started and sensors were off
-countog = ogclean2.iloc[54425:,].count()
-minog = ogclean2.iloc[54425:,].min()
-maxog = ogclean2.iloc[54425:,].max()
-meanog = ogclean2.iloc[54425:,].mean()
-stdevog = ogclean2.iloc[54425:,].std()
+# summary statistics on clean data starting where volumes starts. (row 54,425) (but since we took out 64 rows for "No Available Data this subtracted from the data file - this eliminates are negatives from Casing and Tubing Pressure bc it is before the well started and sensors were off
+countog = ogclean.count()
+minog = ogclean.min()
+maxog = ogclean.max()
+meanog = ogclean.mean()
+stdevog = ogclean.std()
 
 main_stats = DataFrame({'Count': countog, 'Min': minog, 'Max': maxog, 'Mean': meanog, 'Stdev' :stdevog})
 main_stats = main_stats.T
@@ -107,48 +100,87 @@ print('mean',meanog)
 print('\n')
 print('stdev',stdevog)
 
+
+##observational graphs
+#all other predictors versus time
+ogclean.plot(x="Timestamp", y = ["Volume","CasingAPressure", "FlowlinePressure", "FlowlineTemperature", "WellheadTubingPressure"])
+plt.show()
+#as you can see from this graph, volume has a negative linear relationship with time, so does CasingAPressure, FlowlinePressure, Flowline Temperature, WellheadTubingPressure
+
+
+####correlation coeffecient#####
+wtp_v = ogclean['Volume'].corr(ogclean['WellheadTubingPressure']) #wellheadtubing correlation with volume
+flp_v = ogclean['Volume'].corr(ogclean['FlowlinePressure']) #flowlinepressure correlation with volume
+flt_v = ogclean['Volume'].corr(ogclean['FlowlineTemperature']) #flowlinetemperature correlation with volume
+cap_v = ogclean['Volume'].corr(ogclean['CasingAPressure']) #casingapressure correlation with volume
+
+corrdf = Series({'WTB_V': wtp_v,'FLP_V': flp_v,'FLT_V': flt_v,'CAP_V': cap_v})
+print("Correlation Matrix with Volume: \n",corrdf)
+#WTP_V is WellheadTubingPressure and Volume (.631863)
+#FLP_V is FlowlinePressure and Volume (.902992)
+#FlT_V is FLowlineTemperature and Volume (.510193)
+#CAP_V is CasingAPressure and Volume (.835090)
+## As we can see they are all highly correlated with volume and Flowline Pressure is the highest
+
+
+#grouping stats for modelling
+#below stdev list (comeback to this)
 belowstdev = []
+human = []
+normal = []
+#make another column for category to categorize each variable
+#classifcation logistic and classification
 
-def belowstd():
-    for i in ogclean2.Volume:
-        if i <= 6200: #standard deviation is 1584 so i just did a rough subtraction of 1600 from the mean (7841)
-            belowstdev.append(i)
+#maybe try 1.5 stdev, human, and normal
 
-belowstd()            
-print(belowstdev)
+volumelst = []
+volindex = []
+
+for i in ogclean.Volume:
+    volumelst.append(i)
+
+volstd = meanog['Volume'] - (1.5*stdevog['Volume'])
+
+for index, value in enumerate(volumelst):
+    if value <= volstd:
+        volindex.append(index)
+        
+    
+print(volindex)
+
+#def indexvalue():
+#    for i in ogclean.Volume:
+#        if i <= volstd:
+#            volstdindex = ogclean.index[i]
+#            volstdlist.append(volstdindex)           
+#            
+#indexvalue()
+#print(volstdlist)
+
+#for i in volstdlist:
+#    volstdindex += volsdtindex[i]
+
+            
             
 
-#casingapressure = ogclean1['CasingAPressure']
-#print(len(casingapressure))
-#casingasum = casingapressure.astype(str).sum()
-#print(casingasum)
+#def belowstd():
+#    for i in ogclean.Volume:
+#        if i == 0:
+#            human.append(i)
+#        elif i <= meanog['Volume'] - (1.5*stdevog['Volume']):
+#            oneptfivebelowstdev.append(i)
+#        else:
+#            normal.append(i)
+#
+#belowstd()  
+#print()         
 
-#41388 row
+#correlation matrix
+print(ogclean.corr())
+plt.matshow(ogclean.corr()) 
 
-###### data exploration / observations
+## next part  could extract index of each value for a classification tree, or run a logistic regression.
 
-#tubing = og["WellheadTubingPressure"]
-#tubemax = tubing.max()
-#print(tubemax)
 
-#tubingpressuremax = og.groupby('WellheadTubingPressure').max()
-#print("Wellhead Tubing - Pressure: max",tubingpressuremax)
 
-# ^^ or ?? tubing = og['WellheadTubingPressure']
-#tubingmax = tubing.max()
-#print(tubingmax)
-
-#tubing = og["WellheadTubingPressure"]
-#production = og["Volume"]
-#Y = tubing
-#X = production
-##run a regresion?? data is not cleaned!!
-
-#grouped = og.groupby(['WellheadTubingPressure', 'Volume'])
-#grouped.agg('mean')
-#print(grouped)
-#errors because data is not clean1!!
-
-#dfag = og.agg(['sum', 'min'])
-#print(dfag)
 
