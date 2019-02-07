@@ -125,28 +125,30 @@ print("Correlation Matrix with Volume: \n",corrdf)
 
 #grouping stats for modelling
 #below stdev list (comeback to this)
-belowstdev = []
-human = []
-normal = []
+#belowstdev = []
+#human = []
+#normal = []
 #make another column for category to categorize each variable
 #classifcation logistic and classification
 
 #maybe try 1.5 stdev, human, and normal
 
-volumelst = []
-volindex = []
+#volumelst = []
+#volindex = []
+#
+#for i in ogclean.Volume:
+#    volumelst.append(i)
+#
+#volstd = meanog['Volume'] - (1.5*stdevog['Volume'])
+#
+#for index, value in enumerate(volumelst):
+#    if value <= volstd and value != 0:
+#        volindex.append(index)
+#        
+#    
+#print(volindex)
 
-for i in ogclean.Volume:
-    volumelst.append(i)
-
-volstd = meanog['Volume'] - (1.5*stdevog['Volume'])
-
-for index, value in enumerate(volumelst):
-    if value <= volstd:
-        volindex.append(index)
-        
-    
-print(volindex)
+ogclean.to_excel("ogclean.xlsx")
 
 #def indexvalue():
 #    for i in ogclean.Volume:
@@ -176,8 +178,8 @@ print(volindex)
 #print()         
 
 #correlation matrix
-print(ogclean.corr())
-plt.matshow(ogclean.corr()) 
+#print(ogclean.corr())
+#plt.matshow(ogclean.corr()) 
 
 ## next part  could extract index of each value for a classification tree, or run a logistic regression.
 
