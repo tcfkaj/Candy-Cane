@@ -148,10 +148,6 @@ for index, value in enumerate(volumelst):
     
 print(volindex)
 
-####dfsdlfksdfkldsfsdfaksfasdfx
-
-#dfkapsdjfdsjfasdfdasf
-
 #def indexvalue():
 #    for i in ogclean.Volume:
 #        if i <= volstd:
