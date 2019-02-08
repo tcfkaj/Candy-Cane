@@ -183,6 +183,20 @@ ogclean.to_excel("ogclean.xlsx")
 
 ## next part  could extract index of each value for a classification tree, or run a logistic regression.
 
+#volumelst = []
+#volindex = []
+#
+#for i in ogclean.Volume:
+#    volumelst.append(i)
+#
+#volstd = meanog['Volume'] - (1.5*stdevog['Volume'])
+#
+#for index, value in enumerate(volumelst):
+#    if value <= volstd and value != 0:
+#        volindex.append(index)
+#        
+#    
+#print(volindex)
 
 
 
