@@ -5,6 +5,10 @@ RNN-LTSM to predict deferment on synthetic oil-well data.
 
 #og.py is the script that cleans the original excel file (og.xlsx).
 
+#ogv2 is the script to work on classification
+
+#ogclean is the cleaned dataframe
+
 During the data preprocessing phase we:
 
 1) Performed exploratory data analysis.
