@@ -147,8 +147,7 @@ print("Correlation Matrix with Volume: \n",corrdf)
 #        
 #    
 #print(volindex)
-
-ogclean.to_excel("ogclean.xlsx")
+#ogclean.to_excel("ogclean.xlsx")
 
 #def indexvalue():
 #    for i in ogclean.Volume:
@@ -164,7 +163,7 @@ ogclean.to_excel("ogclean.xlsx")
 
             
             
-
+#
 #def belowstd():
 #    for i in ogclean.Volume:
 #        if i == 0:
@@ -183,7 +182,7 @@ ogclean.to_excel("ogclean.xlsx")
 
 ## next part  could extract index of each value for a classification tree, or run a logistic regression.
 
-#volumelst = []
+
 #volindex = []
 #
 #for i in ogclean.Volume:
@@ -200,47 +199,72 @@ ogclean.to_excel("ogclean.xlsx")
 
 #create lists to store indexes & values for classifcation and algorithim
 volumelst = []
-volindex = []
-volval = []
+belowval = []
+belowind = []
 
 for i in ogclean.Volume: #loop through column volume and take that value and put it into volume list
     volumelst.append(i)
 
-volstd = meanog['Volume'] - (1.5*stdevog['Volume']) #calculate the mean of Volume - 1.5 standard deviations (you can change this to 2,3, whatever number you want)
+##volstd = meanog['Volume'] - (1.5*stdevog['Volume']) #calculate the mean of Volume - 1.5 standard deviations (you can change this to 2,3, whatever number you want)
+threshold = 4000
 
 for index, value in enumerate(volumelst): #(enumerate) allows you to store the index and value you are looking for
-    if value <= volstd and value != 0: #if value is less than our threshold but above 0 then add to our lists
-        volindex.append(index)
-        volval.append(value)
+    if value <= 4000: #if value is less than our threshold but above 0 then add to our lists
+        belowval.append(value)
+        belowind.append(index)
 
-voldic = DataFrame({'Index': volindex, 'Value': volval}) #create a dataframe with the indexes and corresponding values
-print(volindex)
-print(volval)
+voldic = DataFrame({'Index': belowind, 'Value': belowval}) #create a dataframe with the indexes and corresponding values
 print(voldic)
 
-some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5]
+#this is a way to get all of the points and index where they are below the threshold of 4k..
+
+      
 
 
-i = 0
-j = len(some_data)
+some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
 
-human = []
-thresh = []
-reg = []
 
-threshold = 4.0
-v = np.array(some_data)
+i = 0 #initialize
+j = len(some_data) #len of data (30)
+
+human = [] #create list
+thresh = [] #create list
+reg = [] #create list
+
+threshold = 4.0 #threshold
+v = np.array(some_data) #value or (volume for real data) put in array form to use where function
 print(v)
 
+next_thresh = min([i for i in range(len(v)) if v[i] >= threshold]) #this variable was created to loop through the data #stored as int in python
+
+
+index_above_thresh = [i for i in range(len(v)) if v[i] >= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is >= threshold
+index_below_thresh = [i for i in range(len(v)) if v[i] <= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is <= threshold
+index_at_zero = [i for i in range(len(v)) if v[i] == 0] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is == 0
+
+
+
+
+
+
+
+
+for index,value in enumerate(index_below_thresh):
+   index = index
+   value = value      
+
+
+
+
+
 while (i<j):
-    sub_data = some_data[i:j]
-    if sub_data[0] < threshold:
-        nextthresh = min(np.where(v >= threshold))
-        elif 0 is in range(subdata[0]:nextthresh):
+    for index, value in enumerate(some_data):
+        sub_data = some_data[i:j]
+        if sub_data[0] < threshold:
+            nextthresh = min(np.where(v >= threshold)) #this should now equal index 0123(4) because index 4 is where it reaches 4 again. So now what? ###### somehow write if the value 0 is found in the range from index 0 to 4 then add all to human####
+            if av == 0 (sub_data[0],nextthresh)):
+                human.append(index[range(sub_data[0],nextthresh)])
             
-        
-                   
-        
     
 #
 #human = np.where(v == 0) #this is the indexes where volume (v) is equal to 0 
