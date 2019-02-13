@@ -198,5 +198,183 @@ ogclean.to_excel("ogclean.xlsx")
 #    
 #print(volindex)
 
+#create lists to store indexes & values for classifcation and algorithim
+volumelst = []
+volindex = []
+volval = []
+
+for i in ogclean.Volume: #loop through column volume and take that value and put it into volume list
+    volumelst.append(i)
+
+volstd = meanog['Volume'] - (1.5*stdevog['Volume']) #calculate the mean of Volume - 1.5 standard deviations (you can change this to 2,3, whatever number you want)
+
+for index, value in enumerate(volumelst): #(enumerate) allows you to store the index and value you are looking for
+    if value <= volstd and value != 0: #if value is less than our threshold but above 0 then add to our lists
+        volindex.append(index)
+        volval.append(value)
+
+voldic = DataFrame({'Index': volindex, 'Value': volval}) #create a dataframe with the indexes and corresponding values
+print(volindex)
+print(volval)
+print(voldic)
+
+some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5]
+
+
+i = 0
+j = len(some_data)
+
+human = []
+thresh = []
+reg = []
+
+threshold = 4.0
+v = np.array(some_data)
+print(v)
+
+while (i<j):
+    sub_data = some_data[i:j]
+    if sub_data[0] < threshold:
+        nextthresh = min(np.where(v >= threshold))
+        elif 0 is in range(subdata[0]:nextthresh):
+            
+        
+                   
+        
+    
+#
+#human = np.where(v == 0) #this is the indexes where volume (v) is equal to 0 
+#thresh = np.where(v <= threshold) #this is the indexes where volume (v is <= threshold (4 for practice))
+
+
+        
+
+#valthresh = v[np.where(v <= threshold)]
+
+
+print(human)
+
+
+threshhuman = next(thresh.where(v <= threshold and 0 in range(thresh))
+
+
+
+
+
+
+
+
+
+
+
+i = 0
+j = len(some_data)
+human = []
+deferment = []
+normal = []
+threshold = 4
+nextthr = min
+
+def firstcategory():
+    for idx,val in enumerate(some_data):
+        if val == 0:
+            human.append(idx)
+        elif i <= threshold:
+            deferment.append(idx)
+        else:
+            normal.append(idx)
+            
+belowstd()
+
+print(deferment)
+
+
+for index, value in enumerate(deferment):
+    print(index)
+
+
+human = []
+deferment = []
+normal = []
+thresholdindex = []
+threshold = 4
+i = 0
+j = len(some_data)
+
+for index, value in enumerate(some_data):
+    if value <= threshold and value !=0:
+
+val = val for (idx, val) in enumerate(some_data))
+
+while i > j:
+   val, idx = ((val, idx) for (idx, val) in enumerate(some_data))
+   sub_data = some_data[i:j]
+   if sub_data[0] < threshold:
+        next_thr = min(index) >= threshold, len(sub_data)  
+
+          
+            
+                        #next_thr <- min(min(which(sub_data >= threshold)),length(sub_data))
+#                 if (0 %in% sub_data[1: (next_thr -1)]){
+#                         labs <- c(labs, rep("HUM", next_thr -1))
+#                 }
+#                 else {
+#                         labs <- c(labs, rep("DEF", next_thr -1))
+#                 }
+#         }
+#         else {
+#                 next_thr <- min(min(which(sub_data < threshold)),length(sub_data))
+#                 labs <- c(labs, rep("REG", next_thr - 1))
+#         }
+#         i <- i + next_thr -1
+#         iter <- iter+1
+# }
+#
+# labs <- c(labs, labs[length(labs)])
+#
+# iter
+# test_df <- data.frame(Val=some_data, Labs=labs)
+# test_df
+        
+    
+
+        
+    
+        
+    #sub_data = some_data[i:j]
+    #if value < threshold:
+    #    next_thr = min(index).where( >= threshold in some_data
+    #and if 0 is in some_data[:(next_thr - 1)]:
+    #    human.append[next_thr - 1]
+
+
+#while i < j:
+#    sub_data = some_data[i:j]
+#    if (sub_data[i] < threshold):
+#       next_thr = min(sub_data[i] >= threshold) in len(sub_data)
+#       if 0 in sub_data[0: (next_thr - 1)]:
+#           human.append[next_thr - 1]
+#           i += 1
+#print(human)
+           
+
+#print(labs)
+#                         labs <- c(labs, rep("DEF", next_thr -1))
+#                 }
+#         }
+#         else {
+#                 next_thr <- min(min(which(sub_data < threshold)),length(sub_data))
+#                 labs <- c(labs, rep("REG", next_thr - 1))
+#         }
+#         i <- i + next_thr -1
+#         iter <- iter+1
+# }
+#
+# labs <- c(labs, labs[length(labs)])
+#
+# iter
+# test_df <- data.frame(Val=some_data, Labs=labs)
+# test_df
+
 
 
