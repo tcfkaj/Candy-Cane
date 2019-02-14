@@ -9,7 +9,7 @@ RNN-LTSM to predict deferment on synthetic oil-well data.
 
 #ogclean is the cleaned dataframe
 
-#threshold (almost finished - still working) once complete we can run this through our nueral network!!! 
+#threshold - this categorizes our data: we can run this through our nueral network!
 
 During the data preprocessing phase we:
 
@@ -22,5 +22,6 @@ During the data preprocessing phase we:
 7) Converted all the data to float format for statistical analysis.
 8) Performed statistical analysis to better understand our data.
 9) Plotted the data to visualize the data over time.
-10)Checked the correlation between our variables.
-11)Saved our cleaned dataframe to the excel file 'ogclean.xlsx'.
+10) Checked the correlation between our variables.
+11) Saved our cleaned dataframe to the excel file 'ogclean.xlsx'.
+12) Categorized our data as either a HUM,DEF,or NORM.
