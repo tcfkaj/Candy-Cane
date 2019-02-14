@@ -137,13 +137,58 @@ head(cc.data)
 
 proc.time() - ptm
 
+#########################################
+############# Label next 24 #############
+#########################################
+
+##########################################################
+############# This takes wayyyyyyyy too long #############
+##########################################################
+
+# print("Labeling next 24...")
+# print("Rows before: ")
+# nrow(cc.data)
+#
+# Next.24 <- c()
+#
+# for (i in 1:(nrow(cc.data) -1440)){
+#         if ("DEF" %in% cc.data$Labs[i:i+1440]) {
+#                 Next.24 <- c(Next.24, "DANGER")
+#         }
+#         else{
+#                 Next.24 <- c(Next.24, "CLEAR")
+#         }
+# }
+#
+# Next.24 <- c(Next.24, rep(NA, 1440))
+#
+# cc.data <- cc.data %>%
+#         mutate(Next.24=Next.24) %>%
+#         na.omit()
+# print("Rows after: ")
+# nrow(cc.data)
+#
+
+###########################################
+############## A better way  ##############
+###########################################
+
+
+
 #################################
 ############# Graph #############
 #################################
  print("Graphing...")
-ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Labs)) +
+ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Next.24)) +
 	geom_point()
 
 
-print("Writing to csv...")
-write.csv(cc.data, file="../labeled_data.csv")
+#########################################################
+############### Split HUM into sub-series ###############
+#########################################################
+
+
+
+
+# print("Writing to csv...")
+# write.csv(cc.data, file="../labeled_data.csv")
