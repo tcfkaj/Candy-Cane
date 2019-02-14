@@ -9,32 +9,100 @@ Created on Wed Feb 13 22:07:07 2019
 
 ##Threshold
 
-import numpy as np
 
-some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
+some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5]
 
-i = 0 #initialize
-j = len(some_data) #len of data (30)
+#you can do it with pandas:
 
-cats = []
+import pandas as pd #import pandas
 
-threshold = 4 #threshold
-v = np.array(some_data) #value or (volume for real data) put in array form to use where function
+#First, create a pandas dataframe from your data list:
 
-new_threshold = int
+df = pd.DataFrame(some_data, columns=['Values'])
+#Then add a new column for the categories:
 
-while (i<j):
-    sub_data = some_data[i:j]
-    if sub_data[0] < threshold:
-            new_threshold = min(min(np.where(v >= threshold)))
-            if 0 in (sub_data[0:new_threshold]):
-                cats.append('HUM')
-            else: 
-                cats.append('DEF')
-    else:
-        new_threshold = min(min(np.where(v < threshold)))
-        cats.append('NORM')
-        
-i = i + new_threshold
+df['Categories'] = '' #this creates the categories column in our data frame that is based on strings
 
-print(cats)
+#In a first step, all Values greater or equal to the threshold are 'REG', all others 'HUM':
+
+df.loc[df.Values>=4, 'Categories'] = 'REG'
+df.loc[df.Values<4, 'Categories'] = 'HUM'
+
+#To tell 'HUM' sections with 0 in Values from those without, we'll mark all sections with a different number to be able to group them:
+
+df['aux'] = (df.Categories != df.Categories.shift()).cumsum() #not entirely sure how this works but it does haha
+#So the dataframe now looks like
+#
+#    Values Categories  aux
+#0        0        HUM    1
+#1        0        HUM    1
+#2        0        HUM    1
+#3        3        HUM    1
+#4        4        REG    2
+#5        5        REG    2
+#6        8        REG    2
+#7        9        REG    2
+#8        7        REG    2
+#9        8        REG    2
+#10       5        REG    2
+#11       3        HUM    3
+#12       3        HUM    3
+#13       2        HUM    3
+#14       2        HUM    3
+#15       0        HUM    3
+#16       1        HUM    3
+#17       3        HUM    3
+#18       5        REG    4
+#19       6        REG    4
+#20       6        REG    4
+#21       6        REG    4
+#22       4        REG    4
+#23       3        HUM    5
+#24       2        HUM    5
+#25       2        HUM    5
+#26       3        HUM    5
+#27       3        HUM    5
+#28       4        REG    6
+#29       5        REG    6
+#and grouping works now with the aux column. Now we can iterate over all groups and change the Categories entries to 'DEF' in the dataframe only for groups in which 0 is not in Values and 'HUM' is in Categories:
+
+for n, g in df.groupby('aux'):
+    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #also need to figure out how this is all working
+        df.loc[g.index, 'Categories'] = 'DEF'
+
+
+
+print(df)
+#Result: #the desired output
+
+#    Values Categories  aux
+#0        0        HUM    1
+#1        0        HUM    1
+#2        0        HUM    1
+#3        3        HUM    1
+#4        4        REG    2
+#5        5        REG    2
+#6        8        REG    2
+#7        9        REG    2
+#8        7        REG    2
+#9        8        REG    2
+#10       5        REG    2
+#11       3        HUM    3
+#12       3        HUM    3
+#13       2        HUM    3
+#14       2        HUM    3
+#15       0        HUM    3
+#16       1        HUM    3
+#17       3        HUM    3
+#18       5        REG    4
+#19       6        REG    4
+#20       6        REG    4
+#21       6        REG    4
+#22       4        REG    4
+#23       3        DEF    5
+#24       2        DEF    5
+#25       2        DEF    5
+#26       3        DEF    5
+#27       3        DEF    5
+#28       4        REG    6
+#29       5        REG    6
