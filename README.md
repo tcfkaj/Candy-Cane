@@ -9,6 +9,8 @@ RNN-LTSM to predict deferment on synthetic oil-well data.
 
 #ogclean is the cleaned dataframe
 
+#threshold (almost finished - still working) once complete we can run this through our nueral network!!! 
+
 During the data preprocessing phase we:
 
 1) Performed exploratory data analysis.
