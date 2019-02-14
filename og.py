@@ -122,7 +122,199 @@ print("Correlation Matrix with Volume: \n",corrdf)
 #CAP_V is CasingAPressure and Volume (.835090)
 ## As we can see they are all highly correlated with volume and Flowline Pressure is the highest
 
+#Practice Test on Categorization
 
+#some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5]
+#
+##you can do it with pandas:
+# #import pandas
+#
+##First, create a pandas dataframe from your data list:
+#
+#df = pd.DataFrame(some_data, columns=['Values'])
+##Then add a new column for the categories:
+#
+#df['Categories'] = '' #this creates the categories column in our data frame that is based on strings
+#
+##In a first step, all Values greater or equal to the threshold are 'REG', all others 'HUM':
+#
+#df.loc[df.Values>=4, 'Categories'] = 'REG'
+#df.loc[df.Values<4, 'Categories'] = 'HUM'
+#
+##To tell 'HUM' sections with 0 in Values from those without, we'll mark all sections with a different number to be able to group them:
+#
+#df['aux'] = (df.Categories != df.Categories.shift()).cumsum() #not entirely sure how this works but it does haha
+##So the dataframe now looks like
+##
+##    Values Categories  aux
+##0        0        HUM    1
+##1        0        HUM    1
+##2        0        HUM    1
+##3        3        HUM    1
+##4        4        REG    2
+##5        5        REG    2
+##6        8        REG    2
+##7        9        REG    2
+##8        7        REG    2
+##9        8        REG    2
+##10       5        REG    2
+##11       3        HUM    3
+##12       3        HUM    3
+##13       2        HUM    3
+##14       2        HUM    3
+##15       0        HUM    3
+##16       1        HUM    3
+##17       3        HUM    3
+##18       5        REG    4
+##19       6        REG    4
+##20       6        REG    4
+##21       6        REG    4
+##22       4        REG    4
+##23       3        HUM    5
+##24       2        HUM    5
+##25       2        HUM    5
+##26       3        HUM    5
+##27       3        HUM    5
+##28       4        REG    6
+##29       5        REG    6
+##and grouping works now with the aux column. Now we can iterate over all groups and change the Categories entries to 'DEF' in the dataframe only for groups in which 0 is not in Values and 'HUM' is in Categories:
+#
+#for n, g in df.groupby('aux'):
+#    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #also need to figure out how this is all working
+#        df.loc[g.index, 'Categories'] = 'DEF'
+#
+#
+
+#print(df)
+#Result: #the desired output
+
+#    Values Categories  aux
+#0        0        HUM    1
+#1        0        HUM    1
+#2        0        HUM    1
+#3        3        HUM    1
+#4        4        REG    2
+#5        5        REG    2
+#6        8        REG    2
+#7        9        REG    2
+#8        7        REG    2
+#9        8        REG    2
+#10       5        REG    2
+#11       3        HUM    3
+#12       3        HUM    3
+#13       2        HUM    3
+#14       2        HUM    3
+#15       0        HUM    3
+#16       1        HUM    3
+#17       3        HUM    3
+#18       5        REG    4
+#19       6        REG    4
+#20       6        REG    4
+#21       6        REG    4
+#22       4        REG    4
+#23       3        DEF    5
+#24       2        DEF    5
+#25       2        DEF    5
+#26       3        DEF    5
+#27       3        DEF    5
+#28       4        REG    6
+#29       5        REG    6
+
+
+
+#Real-Data Categorization
+      
+vol_list = []
+for i in ogclean['Volume']:
+    vol_list.append(i)
+
+df = pd.DataFrame(vol_list, columns=['Values'])
+df['Categories'] = ''
+
+df.loc[df.Values>=4000, 'Categories'] = 'REG'
+df.loc[df.Values<4000, 'Categories'] = 'HUM'
+
+#To tell 'HUM' sections with 0 in Values from those without, we'll mark all sections with a different number to be able to group them:
+
+df['aux'] = (df.Categories != df.Categories.shift()).cumsum()
+
+for n, g in df.groupby('aux'):
+    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #also need to figure out how this is all working
+        df.loc[g.index, 'Categories'] = 'DEF'
+        
+        
+print(df)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#all below was unused code but I would like to keep it in the file as comments in case I want to reference it in the future.
 #grouping stats for modelling
 #below stdev list (comeback to this)
 #belowstdev = []
@@ -198,74 +390,74 @@ print("Correlation Matrix with Volume: \n",corrdf)
 #print(volindex)
 
 #create lists to store indexes & values for classifcation and algorithim
-volumelst = []
-belowval = []
-belowind = []
-
-for i in ogclean.Volume: #loop through column volume and take that value and put it into volume list
-    volumelst.append(i)
-
-##volstd = meanog['Volume'] - (1.5*stdevog['Volume']) #calculate the mean of Volume - 1.5 standard deviations (you can change this to 2,3, whatever number you want)
-threshold = 4000
-
-for index, value in enumerate(volumelst): #(enumerate) allows you to store the index and value you are looking for
-    if value <= 4000: #if value is less than our threshold but above 0 then add to our lists
-        belowval.append(value)
-        belowind.append(index)
-
-voldic = DataFrame({'Index': belowind, 'Value': belowval}) #create a dataframe with the indexes and corresponding values
-print(voldic)
-
-#this is a way to get all of the points and index where they are below the threshold of 4k..
-
-      
-
-
-
-some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
-
-i = 0 #initialize
-j = len(some_data) #len of data (30)
-
-cats = [] #categories' list
-human = []
-defr = []
-norm = []
-
-
-threshold = 4 #threshold
-v = np.array(some_data) #value or (volume for real data) put in array form to use where function
-print(v)
-
-next_thresh = min([i for i in range(len(v)) if v[i] >= threshold]) #this variable was created to loop through the data #stored as int in python
-next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold]) #trying to create a function that crosses over the thresholds and classifies if the 
-next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] >= threshold])
-index_above_thresh = [i for i in range(len(v)) if v[i] >= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is >= threshold
-index_below_thresh = [i for i in range(len(v)) if v[i] <= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is <= threshold
-index_at_zero = [i for i in range(len(v)) if v[i] == 0] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is == 0
-index_below_human = [i for i in range(next_thresh) if v[i] <= threshold]
-next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold])
-
-next_threshold = int(next_threshold)
-
-new_threshold = int
-
-while (i<j):
-    sub_data = some_data[i:j]
-    if sub_data[0] < threshold:
-            new_threshold = min(min(np.where(v >= threshold))) #this should now equal index 0123(4) because index 4 is where it reaches 4 again. So now what? ###### somehow write if the value 0 is found in the range from index 0 to 4 then add all to human####
-            if 0 in (sub_data[0:new_threshold]):
-                human.append("HUM")
-            else: 
-                defr.append("DEF")
-    else:
-        norm.append("NORM")
-        new_threshold = min(min(np.where(v < threshold)))
-    i = i + new_threshold
-    
-print(human)
-print(defr)
-print(norm)
+#volumelst = []
+#belowval = []
+#belowind = []
+#
+#for i in ogclean.Volume: #loop through column volume and take that value and put it into volume list
+#    volumelst.append(i)
+#
+###volstd = meanog['Volume'] - (1.5*stdevog['Volume']) #calculate the mean of Volume - 1.5 standard deviations (you can change this to 2,3, whatever number you want)
+#threshold = 4000
+#
+#for index, value in enumerate(volumelst): #(enumerate) allows you to store the index and value you are looking for
+#    if value <= 4000: #if value is less than our threshold but above 0 then add to our lists
+#        belowval.append(value)
+#        belowind.append(index)
+#
+#voldic = DataFrame({'Index': belowind, 'Value': belowval}) #create a dataframe with the indexes and corresponding values
+#print(voldic)
+#
+##this is a way to get all of the points and index where they are below the threshold of 4k..
+#
+#      
+#
+#
+#
+#some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
+#
+#i = 0 #initialize
+#j = len(some_data) #len of data (30)
+#
+#cats = [] #categories' list
+#human = []
+#defr = []
+#norm = []
+#
+#
+#threshold = 4 #threshold
+#v = np.array(some_data) #value or (volume for real data) put in array form to use where function
+#print(v)
+#
+#next_thresh = min([i for i in range(len(v)) if v[i] >= threshold]) #this variable was created to loop through the data #stored as int in python
+#next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold]) #trying to create a function that crosses over the thresholds and classifies if the 
+#next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] >= threshold])
+#index_above_thresh = [i for i in range(len(v)) if v[i] >= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is >= threshold
+#index_below_thresh = [i for i in range(len(v)) if v[i] <= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is <= threshold
+#index_at_zero = [i for i in range(len(v)) if v[i] == 0] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is == 0
+#index_below_human = [i for i in range(next_thresh) if v[i] <= threshold]
+#next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold])
+#
+#next_threshold = int(next_threshold)
+#
+#new_threshold = int
+#
+#while (i<j):
+#    sub_data = some_data[i:j]
+#    if sub_data[0] < threshold:
+#            new_threshold = min(min(np.where(v >= threshold))) #this should now equal index 0123(4) because index 4 is where it reaches 4 again. So now what? ###### somehow write if the value 0 is found in the range from index 0 to 4 then add all to human####
+#            if 0 in (sub_data[0:new_threshold]):
+#                human.append("HUM")
+#            else: 
+#                defr.append("DEF")
+#    else:
+#        norm.append("NORM")
+#        new_threshold = min(min(np.where(v < threshold)))
+#    i = i + new_threshold
+#    
+#print(human)
+#print(defr)
+#print(norm)
 
 #         else {
 #                 next_thr <- min(min(which(sub_data < threshold)),length(sub_data))
@@ -285,9 +477,6 @@ print(norm)
 #human = np.where(v == 0) #this is the indexes where volume (v) is equal to 0 
 #thresh = np.where(v <= threshold) #this is the indexes where volume (v is <= threshold (4 for practice))
 
-
-        
-
 #valthresh = v[np.where(v <= threshold)]
 
 
@@ -295,51 +484,51 @@ print(norm)
 
 
 #threshhuman = next(thresh.where(v <= threshold and 0 in range(thresh))
-
-i = 0
-j = len(some_data)
-human = []
-deferment = []
-normal = []
-threshold = 4
-nextthr = min
-
-def firstcategory():
-    for idx,val in enumerate(some_data):
-        if val == 0:
-            human.append(idx)
-        elif i <= threshold:
-            deferment.append(idx)
-        else:
-            normal.append(idx)
-            
-belowstd()
-
-print(deferment)
-
-
-for index, value in enumerate(deferment):
-    print(index)
-
-
-human = []
-deferment = []
-normal = []
-thresholdindex = []
-threshold = 4
-i = 0
-j = len(some_data)
-
-for index, value in enumerate(some_data):
-    if value <= threshold and value !=0:
-
-val = val for (idx, val) in enumerate(some_data))
-
-while i > j:
-   val, idx = ((val, idx) for (idx, val) in enumerate(some_data))
-   sub_data = some_data[i:j]
-   if sub_data[0] < threshold:
-        next_thr = min(index) >= threshold, len(sub_data)  
+#
+#i = 0
+#j = len(some_data)
+#human = []
+#deferment = []
+#normal = []
+#threshold = 4
+#nextthr = min
+#
+#def firstcategory():
+#    for idx,val in enumerate(some_data):
+#        if val == 0:
+#            human.append(idx)
+#        elif i <= threshold:
+#            deferment.append(idx)
+#        else:
+#            normal.append(idx)
+#            
+#belowstd()
+#
+#print(deferment)
+#
+#
+#for index, value in enumerate(deferment):
+#    print(index)
+#
+#
+#human = []
+#deferment = []
+#normal = []
+#thresholdindex = []
+#threshold = 4
+#i = 0
+#j = len(some_data)
+#
+#for index, value in enumerate(some_data):
+#    if value <= threshold and value !=0:
+#
+#val = val for (idx, val) in enumerate(some_data))
+#
+#while i > j:
+#   val, idx = ((val, idx) for (idx, val) in enumerate(some_data))
+#   sub_data = some_data[i:j]
+#   if sub_data[0] < threshold:
+#        next_thr = min(index) >= threshold, len(sub_data)  
                         #next_thr <- min(min(which(sub_data >= threshold)),length(sub_data))
 #                 if (0 %in% sub_data[1: (next_thr -1)]){
 #                         labs <- c(labs, rep("HUM", next_thr -1))
@@ -361,12 +550,7 @@ while i > j:
 # iter
 # test_df <- data.frame(Val=some_data, Labs=labs)
 # test_df
-        
     
-
-        
-    
-        
     #sub_data = some_data[i:j]
     #if value < threshold:
     #    next_thr = min(index).where( >= threshold in some_data
