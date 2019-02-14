@@ -221,50 +221,65 @@ print(voldic)
       
 
 
-some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
 
+some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
 
 i = 0 #initialize
 j = len(some_data) #len of data (30)
 
-human = [] #create list
-thresh = [] #create list
-reg = [] #create list
+cats = [] #categories' list
+human = []
+defr = []
+norm = []
 
-threshold = 4.0 #threshold
+
+threshold = 4 #threshold
 v = np.array(some_data) #value or (volume for real data) put in array form to use where function
 print(v)
 
 next_thresh = min([i for i in range(len(v)) if v[i] >= threshold]) #this variable was created to loop through the data #stored as int in python
-
-
+next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold]) #trying to create a function that crosses over the thresholds and classifies if the 
+next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] >= threshold])
 index_above_thresh = [i for i in range(len(v)) if v[i] >= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is >= threshold
 index_below_thresh = [i for i in range(len(v)) if v[i] <= threshold] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is <= threshold
 index_at_zero = [i for i in range(len(v)) if v[i] == 0] #this produces the list of indexes for the indexes in the range of the array and if the value of that index is == 0
+index_below_human = [i for i in range(next_thresh) if v[i] <= threshold]
+next_thresh_next = min([i for i in range(next_thresh+1,len(v)) if v[i] <= threshold])
 
+next_threshold = int(next_threshold)
 
-
-
-
-
-
-
-for index,value in enumerate(index_below_thresh):
-   index = index
-   value = value      
-
-
-
-
+new_threshold = int
 
 while (i<j):
-    for index, value in enumerate(some_data):
-        sub_data = some_data[i:j]
-        if sub_data[0] < threshold:
-            nextthresh = min(np.where(v >= threshold)) #this should now equal index 0123(4) because index 4 is where it reaches 4 again. So now what? ###### somehow write if the value 0 is found in the range from index 0 to 4 then add all to human####
-            if av == 0 (sub_data[0],nextthresh)):
-                human.append(index[range(sub_data[0],nextthresh)])
-            
+    sub_data = some_data[i:j]
+    if sub_data[0] < threshold:
+            new_threshold = min(min(np.where(v >= threshold))) #this should now equal index 0123(4) because index 4 is where it reaches 4 again. So now what? ###### somehow write if the value 0 is found in the range from index 0 to 4 then add all to human####
+            if 0 in (sub_data[0:new_threshold]):
+                human.append("HUM")
+            else: 
+                defr.append("DEF")
+    else:
+        norm.append("NORM")
+        new_threshold = min(min(np.where(v < threshold)))
+    i = i + new_threshold
+    
+print(human)
+print(defr)
+print(norm)
+
+#         else {
+#                 next_thr <- min(min(which(sub_data < threshold)),length(sub_data))
+#                 labs <- c(labs, rep("REG", next_thr - 1))
+#         }
+#         i <- i + next_thr -1
+#         iter <- iter+1
+# }
+#
+# labs <- c(labs, labs[length(labs)])
+#
+# iter
+# test_df <- data.frame(Val=some_data, Labs=labs)
+# test_df
     
 #
 #human = np.where(v == 0) #this is the indexes where volume (v) is equal to 0 
@@ -276,20 +291,10 @@ while (i<j):
 #valthresh = v[np.where(v <= threshold)]
 
 
-print(human)
+#print(human)
 
 
-threshhuman = next(thresh.where(v <= threshold and 0 in range(thresh))
-
-
-
-
-
-
-
-
-
-
+#threshhuman = next(thresh.where(v <= threshold and 0 in range(thresh))
 
 i = 0
 j = len(some_data)
@@ -335,9 +340,6 @@ while i > j:
    sub_data = some_data[i:j]
    if sub_data[0] < threshold:
         next_thr = min(index) >= threshold, len(sub_data)  
-
-          
-            
                         #next_thr <- min(min(which(sub_data >= threshold)),length(sub_data))
 #                 if (0 %in% sub_data[1: (next_thr -1)]){
 #                         labs <- c(labs, rep("HUM", next_thr -1))
