@@ -224,26 +224,24 @@ print("Correlation Matrix with Volume: \n",corrdf)
 
 #Real-Data Categorization
       
-vol_list = []
-for i in ogclean['Volume']:
-    vol_list.append(i)
+vol_list = [] #create list to store values for Volume (when Volume is an array or Series it does not work so we make it a list)
+for i in ogclean['Volume']: #search through column Volume
+    vol_list.append(i) #add volume to volume list
 
-df = pd.DataFrame(vol_list, columns=['Values'])
-df['Categories'] = ''
+cats = pd.DataFrame(vol_list, columns=['Values']) #create new dataframe cats to store categories 
+cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
 
-df.loc[df.Values>=4000, 'Categories'] = 'REG'
-df.loc[df.Values<4000, 'Categories'] = 'HUM'
+cats.loc[cats.Values>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+cats.loc[cats.Values<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is not in that section we will change it to DEF.
 
-#To tell 'HUM' sections with 0 in Values from those without, we'll mark all sections with a different number to be able to group them:
+cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
+#To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them: essentially anytime the sections go above or below the threshold or it is a change from HUM to REG
 
-df['aux'] = (df.Categories != df.Categories.shift()).cumsum()
-
-for n, g in df.groupby('aux'):
-    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #also need to figure out how this is all working
-        df.loc[g.index, 'Categories'] = 'DEF'
+for n, g in cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+    if 0 not in g.Values.values and 'HUM' in g.Categories.values: 
+        cats.loc[g.index, 'Categories'] = 'DEF'
         
-        
-print(df)
+    
         
 
 
