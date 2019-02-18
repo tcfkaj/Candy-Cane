@@ -148,7 +148,12 @@ pred.band.col <- data.frame(c(pred.exp.1-band.limit.1, pred.exp.2-band.limit.2,
 cc.data.band$pred.exp <- pred.col[, 1]
 cc.data.band$pred.band <- pred.band.col[, 1]
 
-# Plot for K Means clustering
+# write.csv(cc.data.band, file="cc_data_band.csv")
+# write.csv(cc.data.band[, c(8, 9)], file="cc_data_band_2.csv")
+# ============================================================================
+cc.data.band <- read.csv("cc_data_band.csv", row.names = 1)
+
+# Plot for K Means clustering and bands
 library(ClusterR)
 library(RColorBrewer)
 library(ggplot2)
@@ -168,7 +173,18 @@ plot.def <- ggplot(data=cc.data, aes(x=time))+
 
 plot.def
 
-write.csv(cc.data.band, file="cc_data_band.csv")
-write.csv(cc.data.band[, c(8, 9)], file="cc_data_band_2.csv")
+# Plot for 3 exp. fitted lines
+plot.def <- ggplot(data=cc.data, aes(x=time))+
+  geom_point(aes(y=Vol.Day, color = factor(cc.data$km.cls)))+
+  ggtitle(sprintf("K Means Clustering for %d Classes with 3 Exp Fitted Lines", num.cluster)) + labs(color = "Classes") +
+  theme(plot.title = element_text(lineheight=0.7, face="bold", hjust=0.5)) +
+  xlab("Time") + ylab("Volume - Calendar Day Production") +
+  geom_line(color='black',data = cls.1, aes(y=vol.exp.1), size=1) +
+  geom_line(color='black',data = cls.2, aes(y=vol.exp.2), size=1) +
+  geom_line(color='black',data = cls.3, aes(y=vol.exp.3), size=1) +
+  scale_color_manual(values = mypalette[c(2, 4, 1, 3)])
+#scale_color_manual(values=c("blue", "purple", "red", "green3"))
+#scale_color_manual(values = mypalette)
 
+plot.def
 
