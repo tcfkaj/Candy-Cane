@@ -1,4 +1,5 @@
 cc.data <- read.csv("cc_data_km_cls.csv", row.names = 1)
+# See 1_kmeans_clustering_v1.R for the dataset.
 
 # Regression for each clusters.
 
