@@ -153,6 +153,7 @@ library(ClusterR)
 library(RColorBrewer)
 library(ggplot2)
 mypalette<-brewer.pal(9, name="Set1")
+num.cluster <- 4
 
 plot.def <- ggplot(data=cc.data, aes(x=time))+
   geom_point(aes(y=Vol.Day, color = factor(cc.data$km.cls)))+
