@@ -11,7 +11,7 @@ During the data preprocessing phase we:
 2) Searched for Na's or missing data.
 3) Renamed columns to have no spaces to make querying easier.
 4) Dropped the 3 unnecessary / insignificant columns (Name ,Type, Casing B Pressure (no data))
-5) Sliced the dataframe from where the 'Volume' production began (ogclean.iloc[54425:,]) so data starts from when production started.
+5) Sliced the dataframe from where the 'Volume' production began (ogclean.iloc[54425:,]) so data starts from when production started. (change this once we finally pick it*******)
 6) Replaced all negative values for 'FlowlinePressure' to 0 (this meant the sensors were either off or it was 0).
 7) Converted all the data to float format for statistical analysis.
 8) Performed statistical analysis to better understand our data.
