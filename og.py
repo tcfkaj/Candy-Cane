@@ -12,15 +12,10 @@ Created on Sat Jan 26 14:44:33 2019
 import pandas as pd
 import numpy as np
 from pandas import Series,DataFrame
-from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
-
-
-###
 
 ### read in excel
 og = pd.read_excel('og.xlsx')
-###
 
 ### rename columns w/o spaces
 og = og.rename(columns = {"Wellhead Tubing - Pressure": "WellheadTubingPressure"})
@@ -36,7 +31,6 @@ og = og.rename(columns = {'Type of Facility': "Type"})
 ### Check head to see if data was renamed (it is)
 #data_top = og.head()
 #print(data_top)
-###
 
 ### Number of NA's: From this we observe that they only NA's are in the CasingB Pressure.
 numna = og.isnull().sum()
@@ -45,7 +39,6 @@ numna = og.isnull().sum()
 
 ###The question is now what is the length of CasingB Pressure to check if the entire column is empty or not.
 #casingbpressure = og["CasingBPressure"]
-#print(len(casingbpressure))
 #casingbsum = casingbpressure.astype(str).sum()
 #print(casingbsum)
 ### (We found that the length is 422378 for this therefore there are 64 values in CasingBPressure all of which are "No Data Available" so we are going to drop CasingBPressure.
@@ -57,15 +50,19 @@ ogclean = og.drop(columns = ['Name','Type', 'CasingBPressure'])
 #print(ogcleanhead)
 #the columns were successfully dropped
 
-#get rid of the "time is invalid" by replacing them with last value (this way it does not delete from the time series
+#get rid of the "time is invalid" by replacing them with last value (this way it does not delete from the time series)
 ogclean.loc[ogclean['FlowlinePressure'] == "The time is invalid."] = "585.009460449219"
 ogclean.loc[ogclean['CasingAPressure'] == "The time is invalid."] = "1777.83874511719"
 ogclean.loc[ogclean['FlowlineTemperature'] == "The time is invalid."] = "80.6008224487305"
 ogclean.loc[ogclean['Volume'] == "The time is invalid"] = "7702.91845703125"
 ogclean.loc[ogclean['WellheadTubingPressure'] == "The time is invalid"] = "847.973266601563"
 
+#Starting the dataset from this time. (58084)
+#10/4/2017  1:00:00 AM
 
-ogclean = ogclean.iloc[54425:,]
+#ogclean = ogclean.iloc[54425:,] #this is from the place when volume began (if interested)
+ogclean = ogclean.iloc[58084:,] #This is when the volume starts to consistenly hover around 8000. 
+#Everything before this point was either the run up in volume or would skew our deferments (would pass our threshold quite often if we started before this)
 
 #change everything to float for calculations
 ogclean['WellheadTubingPressure'] = ogclean.WellheadTubingPressure.astype(float)
@@ -74,7 +71,7 @@ ogclean['CasingAPressure'] = ogclean.CasingAPressure.astype(float)
 ogclean['FlowlinePressure'] = ogclean.FlowlinePressure.astype(float)
 ogclean['FlowlineTemperature'] = ogclean.FlowlineTemperature.astype(float)
 
-#get rid of negatives in flowlinepressure!!!
+#get rid of negatives in flowlinepressure
 ogclean.loc[ogclean['FlowlinePressure']<0] = 0
 
 # summary statistics on clean data starting where volumes starts. (row 54,425) (but since we took out 64 rows for "No Available Data this subtracted from the data file - this eliminates are negatives from Casing and Tubing Pressure bc it is before the well started and sensors were off
@@ -100,13 +97,11 @@ print('mean',meanog)
 print('\n')
 print('stdev',stdevog)
 
-
 ##observational graphs
 #all other predictors versus time
 ogclean.plot(x="Timestamp", y = ["Volume","CasingAPressure", "FlowlinePressure", "FlowlineTemperature", "WellheadTubingPressure"])
 plt.show()
 #as you can see from this graph, volume has a negative linear relationship with time, so does CasingAPressure, FlowlinePressure, Flowline Temperature, WellheadTubingPressure
-
 
 ####correlation coeffecient#####
 wtp_v = ogclean['Volume'].corr(ogclean['WellheadTubingPressure']) #wellheadtubing correlation with volume
@@ -122,107 +117,7 @@ print("Correlation Matrix with Volume: \n",corrdf)
 #CAP_V is CasingAPressure and Volume (.835090)
 ## As we can see they are all highly correlated with volume and Flowline Pressure is the highest
 
-#Practice Test on Categorization
-
-#some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5]
-#
-##you can do it with pandas:
-# #import pandas
-#
-##First, create a pandas dataframe from your data list:
-#
-#df = pd.DataFrame(some_data, columns=['Values'])
-##Then add a new column for the categories:
-#
-#df['Categories'] = '' #this creates the categories column in our data frame that is based on strings
-#
-##In a first step, all Values greater or equal to the threshold are 'REG', all others 'HUM':
-#
-#df.loc[df.Values>=4, 'Categories'] = 'REG'
-#df.loc[df.Values<4, 'Categories'] = 'HUM'
-#
-##To tell 'HUM' sections with 0 in Values from those without, we'll mark all sections with a different number to be able to group them:
-#
-#df['aux'] = (df.Categories != df.Categories.shift()).cumsum() #not entirely sure how this works but it does haha
-##So the dataframe now looks like
-##
-##    Values Categories  aux
-##0        0        HUM    1
-##1        0        HUM    1
-##2        0        HUM    1
-##3        3        HUM    1
-##4        4        REG    2
-##5        5        REG    2
-##6        8        REG    2
-##7        9        REG    2
-##8        7        REG    2
-##9        8        REG    2
-##10       5        REG    2
-##11       3        HUM    3
-##12       3        HUM    3
-##13       2        HUM    3
-##14       2        HUM    3
-##15       0        HUM    3
-##16       1        HUM    3
-##17       3        HUM    3
-##18       5        REG    4
-##19       6        REG    4
-##20       6        REG    4
-##21       6        REG    4
-##22       4        REG    4
-##23       3        HUM    5
-##24       2        HUM    5
-##25       2        HUM    5
-##26       3        HUM    5
-##27       3        HUM    5
-##28       4        REG    6
-##29       5        REG    6
-##and grouping works now with the aux column. Now we can iterate over all groups and change the Categories entries to 'DEF' in the dataframe only for groups in which 0 is not in Values and 'HUM' is in Categories:
-#
-#for n, g in df.groupby('aux'):
-#    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #also need to figure out how this is all working
-#        df.loc[g.index, 'Categories'] = 'DEF'
-#
-#
-
-#print(df)
-#Result: #the desired output
-
-#    Values Categories  aux
-#0        0        HUM    1
-#1        0        HUM    1
-#2        0        HUM    1
-#3        3        HUM    1
-#4        4        REG    2
-#5        5        REG    2
-#6        8        REG    2
-#7        9        REG    2
-#8        7        REG    2
-#9        8        REG    2
-#10       5        REG    2
-#11       3        HUM    3
-#12       3        HUM    3
-#13       2        HUM    3
-#14       2        HUM    3
-#15       0        HUM    3
-#16       1        HUM    3
-#17       3        HUM    3
-#18       5        REG    4
-#19       6        REG    4
-#20       6        REG    4
-#21       6        REG    4
-#22       4        REG    4
-#23       3        DEF    5
-#24       2        DEF    5
-#25       2        DEF    5
-#26       3        DEF    5
-#27       3        DEF    5
-#28       4        REG    6
-#29       5        REG    6
-
-
-
-#Real-Data Categorization
+#####Categorization##############3
       
 vol_list = [] #create list to store values for Volume (when Volume is an array or Series it does not work so we make it a list)
 for i in ogclean['Volume']: #search through column Volume
@@ -232,24 +127,62 @@ cats = pd.DataFrame(vol_list, columns=['Values']) #create new dataframe cats to 
 cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
 
 cats.loc[cats.Values>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
-cats.loc[cats.Values<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is not in that section we will change it to DEF.
+cats.loc[cats.Values<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
 
 cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
-#To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them: essentially anytime the sections go above or below the threshold or it is a change from HUM to REG
+#To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them
+
+sectionsize = cats.groupby(['section']).size() #this shows for the size of the sections, very interesting
+#This is very interesting for data exploration
+sectionmean = cats.groupby('section').mean()
 
 for n, g in cats.groupby('section'): #search through section by grouping them together and looking for their values and 
-    if 0 not in g.Values.values and 'HUM' in g.Categories.values: 
-        cats.loc[g.index, 'Categories'] = 'DEF'
+    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+        cats.loc[g.index, 'Categories'] = 'DEF' #this locates all the indexes within our grouped sections and replaces them to DEF
+
+for name, group in cats.groupby('section'):
+    print(name)
+    print(group)
+#This allows you to check out each section individually (we should drop the last section off as a DEF bc volume goes below 4000 and bc the well is dying at this point.)
         
-    
+print(cats)
+
+######## 3 Categories to 2 ########
+
+finalcats = cats #make a copy DF to go from 3 variables, HUM,REG,and DEF, to NOT DEF or DEF.
+
+for name, group in finalcats.groupby('section'):
+    print(name)
+    print(group) #this is great for checking to see if it worked (it does)
+
+for n, g in finalcats.groupby('section'):
+    if 'HUM' in g.Categories.values:
+        finalcats.loc[g.index, 'Categories'] = 'NOT'
+
+for n, g in finalcats.groupby('section'):
+    if 'REG' in g.Categories.values:
+        finalcats.loc[g.index, 'Categories'] = 'NOT'
         
+        
+#Last Cat for our Nueral Network, this will eventually be our Y response in our Nueral that we are trying to predict. Either DEF or NOT. (we need to use a 1440 lag because that is 1 day)
 
+#if (size(group=="NOT")<1440):
+#    group="DEF"
+#    
+#else:
+#    starting_index_of_next_group - 1440: starting_index_of_next_group = "DEF"
+###start at first point it crosses mean threshold
+#print(cats_1)
+#
+#section = cats_1['section']
+#
+#if len(section) in g.Categories.values <1440:
+#    cats_1.loc[g.index, 'Categories'] = 'DEF'
+#    
+#print(cats_1)
 
-
-
-
-
-
+###if a section of NOT is less than 1440 then there was a def within that 24 hour range so all of those NOTS / indexes of NOt are now equal to DEF
+## IFFF the NOT section Is > 1440 you chop off the extra to until YOU MAKE THE CLOSEST 1440 a DEFERMENT (it can be 240) (if it is a long section like 4000, then it is only 1440 and the remaining 2600 are still NOT)
 
 
 
