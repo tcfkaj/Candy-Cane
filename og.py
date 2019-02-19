@@ -133,6 +133,7 @@ cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum()
 #To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them
 
 sectionsize = cats.groupby(['section']).size() #this shows for the size of the sections, very interesting
+sectionmedian = cats.groupby(['section']).median() #this shows the median for each section
 #This is very interesting for data exploration
 sectionmean = cats.groupby('section').mean()
 
@@ -164,8 +165,19 @@ for n, g in finalcats.groupby('section'):
         finalcats.loc[g.index, 'Categories'] = 'NOT'
         
         
-#Last Cat for our Nueral Network, this will eventually be our Y response in our Nueral that we are trying to predict. Either DEF or NOT. (we need to use a 1440 lag because that is 1 day)
+###Last Cat for our Nueral Network, this will eventually be our Y response in our Nueral that we are trying to predict. Either DEF or NOT. (we need to use a 1440 lag because that is 1 day)
+finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cumsum() 
+#We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
 
+        
+sectionsize = finalcats.groupby(['section']).size()
+#Check the size of each section, interesting
+
+
+
+#for n, g in finalcats.groupby('section'):
+#    if any 'REG' in g.Categories.values:
+#        finalcats.loc[g.index, 'Categories'] = 'NOT'
 #if (size(group=="NOT")<1440):
 #    group="DEF"
 #    
