@@ -5,12 +5,6 @@ RNN-LTSM to predict deferment on synthetic oil-well data.
 
 #og.py is the script that cleans the original excel file (og.xlsx).
 
-#ogv2 is the script to work on classification
-
-#ogclean is the cleaned dataframe
-
-#threshold - this categorizes our data: we can run this through our nueral network!
-
 During the data preprocessing phase we:
 
 1) Performed exploratory data analysis.
@@ -25,3 +19,5 @@ During the data preprocessing phase we:
 10) Checked the correlation between our variables.
 11) Saved our cleaned dataframe to the excel file 'ogclean.xlsx'.
 12) Categorized our data as either a HUM,DEF,or NORM.
+13) Recategorized our data to DEF or NOT DEF to be our Y response for our Nueral.
+14) Implemented a time lag for our DEF or NOT DEF predictor because our Nueral needs to predict 1 day in advance.
