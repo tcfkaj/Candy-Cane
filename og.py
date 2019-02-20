@@ -13,6 +13,10 @@ import pandas as pd
 import numpy as np
 from pandas import Series,DataFrame
 import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+from sklearn.model_selection import train_test_split # Import train_test_split function
+from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+
 
 ### read in excel
 og = pd.read_excel('og.xlsx')
@@ -117,7 +121,7 @@ print("Correlation Matrix with Volume: \n",corrdf)
 #CAP_V is CasingAPressure and Volume (.835090)
 ## As we can see they are all highly correlated with volume and Flowline Pressure is the highest
 
-#####Categorization##############3
+#####Categorization#############
       
 vol_list = [] #create list to store values for Volume (when Volume is an array or Series it does not work so we make it a list)
 for i in ogclean['Volume']: #search through column Volume
@@ -164,14 +168,45 @@ for n, g in finalcats.groupby('section'):
     if 'REG' in g.Categories.values:
         finalcats.loc[g.index, 'Categories'] = 'NOT'
         
-        
-###Last Cat for our Nueral Network, this will eventually be our Y response in our Nueral that we are trying to predict. Either DEF or NOT. (we need to use a 1440 lag because that is 1 day)
+        #We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
 finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cumsum() 
-#We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
 
-        
 sectionsize = finalcats.groupby(['section']).size()
 #Check the size of each section, interesting
+   
+
+
+    ##
+   ####
+ ########    
+##########
+#####TREE####
+#split dataset in features and target variable###
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = ogclean[feature_cols] # Features
+y = finalcats.Categories # Target variable
+
+# Split dataset into training set and test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
+
+# Create Decision Tree classifer object
+clf = DecisionTreeClassifier()
+
+# Train Decision Tree Classifer
+clf = clf.fit(X_train,y_train)
+
+#Predict the response for test dataset
+y_pred = clf.predict(X_test)
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+## 99% accuracy, as expected with the unbalanced data set.
+
+##Time Lag for 24 hour for Nueral Network
+
+
+
+
+
 
 
 
