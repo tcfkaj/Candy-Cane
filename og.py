@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jan 26 14:44:33 2019
+Spyder Editor
 
-@author: ryanleveille
+This is a temporary script file.
 """
+
 
 ##Oil and Gas Data Project
 
@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
 from sklearn.model_selection import train_test_split # Import train_test_split function
 from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+from sklearn.linear_model import LogisticRegression
+#arima result - logisitic regression
 
 
 ### read in excel
@@ -172,10 +174,31 @@ for n, g in finalcats.groupby('section'):
 finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cumsum() 
 
 sectionsize = finalcats.groupby(['section']).size()
-#Check the size of each section, interesting
+#check the size of each section
+
+#plt histogram
+plt.hist(finalcats.Values, bins=500)
+
+import plotly.plotly as py
+import plotly.graph_objs as go
+
+data = [go.Histogram(x=finalcats.Values,
+                     histnorm='probability')]
+
+py.iplot(data, filename='histogram')
+
+
+
+
+##
+##finalcats['Timestamp'] = ogclean['Timestamp']
+##finalcats.plot(x="Timestamp", y = ["Categories","Values")
+##plt.show()
+#spotfire
+#histogram
    
 
-
+##len(in between)
     ##
    ####
  ########    
@@ -201,14 +224,33 @@ y_pred = clf.predict(X_test)
 print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
 ## 99% accuracy, as expected with the unbalanced data set.
 
-##Time Lag for 24 hour for Nueral Network
+####Logistic Regression### we now have a binary response , DEF or NOT
+
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = ogclean[feature_cols]
+y_log = finalcats.Categories
+LogReg = LogisticRegression() 
+LogReg.fit(X_train, y_train)
+y_pred = LogReg.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix = confusion_matrix(y_test, y_pred)
 
 
+##Nueral Network
+###before you do this , to predict 24 hours in advance , you will have to do a time lag### for 24 hour for Nueral Network (1440, then cut off the last 1440 since it cant predict a day in advance onces it is 1399 or less left of the dataframe)
 
+##incorporate a 24 hour time lag for 1440 to predict 1 day in advance
 
+#this might not work great because the data is negatively trending downward (data with a pattern dont have to worry about windowing?)
 
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = ogclean[feature_cols]
+y_nueral = finalcats.Categories
 
-
+    #x1 = casingpresure
+#x2 = temperature
+#y = DEF OR NOT
 
 #for n, g in finalcats.groupby('section'):
 #    if any 'REG' in g.Categories.values:
@@ -388,10 +430,6 @@ print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
 #
 ##this is a way to get all of the points and index where they are below the threshold of 4k..
 #
-#      
-#
-#
-#
 #some_data = [0,0,0,3,4,5,8,9,7,8,5,3,3,2,2,0,1,3,5,6,6,6,4,3,2,2,3,3,4,5] #test data
 #
 #i = 0 #initialize
@@ -563,6 +601,4 @@ print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
 # iter
 # test_df <- data.frame(Val=some_data, Labs=labs)
 # test_df
-
-
 
