@@ -177,35 +177,40 @@ proc.time() - ptm
 #############################################
 
 ## Define buffers around first deferment point
-buffer_0 = 200
-buffer_1 = 200
+buffer_0 = 60
+buffer_1 = 60
+
+
+# HUM
+runs <- rle(cc.data$Labs == "HUM")
+size <- buffer_0 + buffer_1
+HUM_subs <- c(1:size)
+length(HUM_subs)
+
+for  (x in 2:length(runs$values)){
+	if(runs$values[x]){
+		i <- sum(runs$lengths[1:(x-1)]) + 1
+		take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
+		print(length(take))
+		HUM_subs <- rbind(HUM_subs, take)
+	}
+}
+
+HUM_subs <- HUM_subs[-1,]
+dim(HUM_subs)
+typeof(HUM_subs)
+
+write.table(HUM_subs,
+	    file="../HUM_subs.csv",
+	    sep=",",
+	    col.names=F,
+	    row.names=F)
 
 
 
-## HUM
-# runs <- rle(cc.data$Labs == "HUM")
-# size <- buffer_0 + buffer_1
-# HUM_subs <- c(1:size)
-# length(HUM_subs)
-#
-# for  (x in 2:length(runs$values)){
-#         if(runs$values[x]){
-#                 i <- sum(runs$lengths[1:(x-1)]) + 1
-#                 take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
-#                 print(length(take))
-#                 HUM_subs <- rbind(HUM_subs, take)
-#         }
-# }
-#
-# HUM_subs <- HUM_subs[-1,]
-# dim(HUM_subs)
-# typeof(HUM_subs)
-#
-# write.table(HUM_subs,
-#             file="../HUM_subs.csv",
-#             sep=",",
-#             col.names=F,
-#             row.names=F)
+
+
+
 
 #########################################
 ############# Label next 24 #############

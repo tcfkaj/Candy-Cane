@@ -6,7 +6,7 @@ from tslearn.metrics import sigma_gak, cdist_gak
 from tslearn.preprocessing import TimeSeriesScalerMeanVariance
 from tslearn.clustering import GlobalAlignmentKernelKMeans
 
-hum_sub = np.loadtxt('HUM_subs.csv', delimiter=',', skiprows=1)
+hum_sub = np.loadtxt('../../HUM_subs.csv', delimiter=',', skiprows=1)
 print(hum_sub.shape)
 
 X = to_time_series_dataset(hum_sub)
@@ -17,13 +17,13 @@ sz = X.shape[1]
 seed = 0
 np.random.seed(seed)
 
-nclust = 3
+nclust = 4
 gak_km = GlobalAlignmentKernelKMeans(n_clusters=nclust, sigma=sigma_gak(X),
-        n_init=10, verbose=True, random_state=seed)
+        n_init=20, verbose=True, random_state=seed)
 y_pred = gak_km.fit_predict(X)
 
 print(gak_km.inertia_)
-print(y_pred)
+print(y_pred+1)
 
 plt.figure()
 for yi in range(nclust):
