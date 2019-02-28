@@ -1,37 +1,22 @@
-suppressMessages(library(tidyverse, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(forecast, quietly=TRUE, warn.conflicts=FALSE))
+suppressMessages(library(tidyverse, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(imputeTS, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(zoo, quietly=TRUE, warn.conflicts=FALSE))
+suppressMessages(library(xts, quietly=TRUE, warn.conflicts=FALSE))
 
-cc.data <- read.csv("../CANDY-CANE.csv")
-colnames(cc.data) <- c("Type.Fac", "Name.Fac",
-		  "Timestamp","Cas.A.Pr",
-		  "Cas.B.Pr","Flow.Pr","Flow.Temp",
-		  "Vol.Day","Tub.Pr")
+cc.data <- read.csv("../cc_data_band_timed_234sd_7K_2.csv", header=T)
+Thresholds <- cc.data[, c("km.cls", "pred.exp", "pred.band", "pred.band3sd", "pred.band4sd")]
+TS <- cc.data$Timestamp
+cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Flow.Temp", "Vol.Day", "Tub.Pr")]
+
 names(cc.data)
-
-
-##########################################################
-############ Subset useful numeric variables ############
-##########################################################
-
-cc.data <- cc.data[11000:nrow(cc.data),]
-cc.data <- cc.data %>%
-	select(Cas.A.Pr,Flow.Pr,
-	       Flow.Temp,Vol.Day,Tub.Pr)
-cc.data$time <- c(1:length(cc.data$Vol.Day))
-colnames(cc.data)
-head(cc.data)
-
-
-######################################################################
-############ Check the variable types and turn to numeric ############
-######################################################################
+names(Thresholds)
+names(TS)
 
 glimpse(cc.data)
-cc.data <- cc.data %>%
-	mutate_all(function(x) as.numeric(as.character(x)))
-glimpse(cc.data)
+glimpse(Thresholds)
+glimpse(TS)
+
 
 ######################
 ### Now count NA's ###
@@ -40,20 +25,6 @@ glimpse(cc.data)
 cc.data %>%
 	sapply(function(x){sum(is.na(x))})
 which(is.na(cc.data$Vol.Day))
-
-
-################################
-######### Fill in NA's #########
-################################
-
-print("Initial look:")
-
-cc.data <- cc.data %>%
-	mutate_all(na.locf) %>%
-	as.data.frame()
-cc.data %>%
-	sapply(function(x){sum(is.na(x))})
-glimpse(cc.data)
 
 #######################################
 ######## Practice test labels  ########
@@ -148,19 +119,22 @@ glimpse(cc.data)
 ptm <- proc.time()
 print("Labeling data...")
 
-splitsAB <- 72000
-splitsBC <- 185000
+# splitsAB <- 72000
+# splitsBC <- 185000
+#
+# A <- suppressWarnings(lm(Vol.Day~time, data=cc.data[1:splitsAB,]))
+# B <- suppressWarnings(lm(Vol.Day~time,
+#                          data=cc.data[(splitsAB+1):splitsBC,]))
+# C <- suppressWarnings(lm(Vol.Day~time,
+#                          data=cc.data[(splitsBC+1):nrow(cc.data),]))
+#
+# sectionA <- predict(A, interval="prediction", level=0.96)[,2]
+# sectionB <- predict(B, interval="prediction", level=0.96)[,2]
+# sectionC <- predict(C, interval="prediction", level=0.96)[,2]
+# threshold <- c(sectionA, sectionB, sectionC)
 
-A <- suppressWarnings(lm(Vol.Day~time, data=cc.data[1:splitsAB,]))
-B <- suppressWarnings(lm(Vol.Day~time,
-			 data=cc.data[(splitsAB+1):splitsBC,]))
-C <- suppressWarnings(lm(Vol.Day~time,
-			 data=cc.data[(splitsBC+1):nrow(cc.data),]))
 
-sectionA <- predict(A, interval="prediction", level=0.96)[,2]
-sectionB <- predict(B, interval="prediction", level=0.96)[,2]
-sectionC <- predict(C, interval="prediction", level=0.96)[,2]
-threshold <- c(sectionA, sectionB, sectionC)
+threshold = Thresholds$pred.band
 
 some_data <- cc.data$Vol.Day
 labs <- c()
@@ -198,8 +172,40 @@ head(cc.data)
 proc.time() - ptm
 
 
+#############################################
+############ Break up deferments ############
+#############################################
+
+## Define buffers around first deferment point
+buffer_0 = 200
+buffer_1 = 200
 
 
+
+## HUM
+# runs <- rle(cc.data$Labs == "HUM")
+# size <- buffer_0 + buffer_1
+# HUM_subs <- c(1:size)
+# length(HUM_subs)
+#
+# for  (x in 2:length(runs$values)){
+#         if(runs$values[x]){
+#                 i <- sum(runs$lengths[1:(x-1)]) + 1
+#                 take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
+#                 print(length(take))
+#                 HUM_subs <- rbind(HUM_subs, take)
+#         }
+# }
+#
+# HUM_subs <- HUM_subs[-1,]
+# dim(HUM_subs)
+# typeof(HUM_subs)
+#
+# write.table(HUM_subs,
+#             file="../HUM_subs.csv",
+#             sep=",",
+#             col.names=F,
+#             row.names=F)
 
 #########################################
 ############# Label next 24 #############
@@ -238,7 +244,6 @@ proc.time() - ptm
 ################### Best way (maybe) ###################
 ########################################################
 
-
 ptm <- proc.time()
 
 timeframe = 1440
@@ -274,10 +279,10 @@ for  (x in 2:length(runs$values)){
 table(next.24)
 proc.time() - ptm
 
-cc.data2 <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
 	mutate(Next.24 = next.24)
 
-head(cc.data2)
+head(cc.data)
 
 
 #################################
@@ -285,24 +290,24 @@ head(cc.data2)
 #################################
 
 
-# print("Graphing...")
-# ggplot(data=cc.data2, aes(x=time, y=Vol.Day, color=Next.24)) +
-#         geom_point() +
-#         geom_vline(xintercept=splitsAB) +
-#         geom_vline(xintercept=splitsBC) +
-#         geom_line(aes(y=threshold[1:nrow(cc.data2)],
-#                       color="threshold")) +
-#         ggtitle("Colored by whether there is a deferment or not in next 24")
-#
-#
-# ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Labs)) +
-#         geom_point() +
-#         geom_vline(xintercept=splitsAB) +
-#         geom_vline(xintercept=splitsBC) +
-#         geom_line(aes(y=threshold[1:nrow(cc.data)],
-#                       color="threshold")) +
-#         ggtitle("Colored based on present label")
-#
+print("Graphing...")
+ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Next.24)) +
+	geom_point() +
+	geom_vline(xintercept=splitsAB) +
+	geom_vline(xintercept=splitsBC) +
+	geom_line(aes(y=threshold[1:nrow(cc.data)],
+		      color="threshold")) +
+ggtitle("Colored by whether there is a deferment or not in next 24")
+
+
+ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Labs)) +
+	geom_point() +
+	geom_vline(xintercept=splitsAB) +
+	geom_vline(xintercept=splitsBC) +
+	geom_line(aes(y=threshold[1:nrow(cc.data)],
+		      color="threshold")) +
+ggtitle("Colored based on present label")
+
 
 #################################################
 ############# Detrend with line fit #############
@@ -377,33 +382,33 @@ cc.data$Tub.Pr <- cc.data$Tub.Pr - fit
 
 
 r = 30
-place.time <- cc.data2$time[1:(nrow(cc.data2)-r+1)]
-place.Next <- cc.data2$Next.24[r:nrow(cc.data2)]
-glimpse(cc.data2[,!(names(cc.data2) %in% c("time", "Labs", "Next.24"))])
+place.time <- cc.data$time[1:(nrow(cc.data)-r+1)]
+place.Next <- cc.data$Next.24[r:nrow(cc.data)]
+glimpse(cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))])
 
-cc.data <- cc.data2[,!(names(cc.data2) %in% c("time", "Labs", "Next.24"))] %>%
+cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))] %>%
 	mutate_all(function(x) rollmeanr(x,r, na.pad=TRUE)) %>%
 	na.omit() %>%
 	mutate(time=place.time, Next.24=place.Next)
 head(cc.data)
 
-ggplot(data=cc.data, aes(x=time))+
-	geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
-	geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
-	geom_line(aes(y=Flow.Temp, color="Flowline Temp"))+
-	geom_line(aes(y=Vol.Day, color="Volume"))+
-	geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
-	labs(color="Legend") +
-	scale_colour_manual("",breaks = c("Casing A Pr",
-					  "Flowline Pr",
-					  "Flowline Temp",
-					  "Volume",
-					  "Tubing Pr"),
-			    values = c("yellow", "red",
-				       "orange", "black",
-				       "blue")) +
-ggtitle("Candy Cane Well- After detrend and MA-30 Filter") +
-theme(plot.title = element_text(lineheight=0.7, face="bold"))
+# ggplot(data=cc.data, aes(x=time))+
+#         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
+#         geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
+#         geom_line(aes(y=Flow.Temp, color="Flowline Temp"))+
+#         geom_line(aes(y=Vol.Day, color="Volume"))+
+#         geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
+#         labs(color="Legend") +
+#         scale_colour_manual("",breaks = c("Casing A Pr",
+#                                           "Flowline Pr",
+#                                           "Flowline Temp",
+#                                           "Volume",
+#                                           "Tubing Pr"),
+#                             values = c("yellow", "red",
+#                                        "orange", "black",
+#                                        "blue")) +
+# ggtitle("Candy Cane Well- After detrend and MA-30 Filter") +
+# theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
 
 place.time <- cc.data$time
@@ -414,25 +419,24 @@ cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24"))] %>%
 
 head(cc.data)
 
-ggplot(data=cc.data, aes(x=time))+
-	geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
-	geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
-	geom_line(aes(y=Flow.Temp, color="Flowline Temp"))+
-	geom_line(aes(y=Vol.Day, color="Volume"))+
-	geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
-	labs(color="Legend") +
-	scale_colour_manual("",breaks = c("Casing A Pr",
-					  "Flowline Pr",
-					  "Flowline Temp",
-					  "Volume",
-					  "Tubing Pr"),
-			    values = c("yellow", "red",
-				       "orange", "black",
-				       "blue")) +
-ggtitle("Candy Cane Well- After detrend, filter and normalize.") +
-theme(plot.title = element_text(lineheight=0.7, face="bold"))
+# ggplot(data=cc.data, aes(x=time))+
+#         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
+#         geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
+#         geom_line(aes(y=Flow.Temp, color="Flowline Temp"))+
+#         geom_line(aes(y=Vol.Day, color="Volume"))+
+#         geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
+#         labs(color="Legend") +
+#         scale_colour_manual("",breaks = c("Casing A Pr",
+#                                           "Flowline Pr",
+#                                           "Flowline Temp",
+#                                           "Volume",
+#                                           "Tubing Pr"),
+#                             values = c("yellow", "red",
+#                                        "orange", "black",
+#                                        "blue")) +
+# ggtitle("Candy Cane Well- After detrend, filter and normalize.") +
+# theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
 
-
-print("Writing to csv...")
-write.csv(cc.data, file="../RNN-ready-DT-MA30-NORM.csv")
+# print("Writing to csv...")
+# write.csv(cc.data, file="../RNN-ready-DT-MA30-NORM.csv")
