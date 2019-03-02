@@ -66,6 +66,7 @@ ogclean.loc[ogclean['WellheadTubingPressure'] == "The time is invalid"] = "847.9
 #Starting the dataset from this time. (58084)
 #10/4/2017  1:00:00 AM
 
+#data missingness map
 #ogclean = ogclean.iloc[54425:,] #this is from the place when volume began (if interested)
 ogclean = ogclean.iloc[58084:,] #This is when the volume starts to consistenly hover around 8000. 
 #Everything before this point was either the run up in volume or would skew our deferments (would pass our threshold quite often if we started before this)
@@ -106,6 +107,9 @@ print('stdev',stdevog)
 ##observational graphs
 #all other predictors versus time
 ogclean.plot(x="Timestamp", y = ["Volume","CasingAPressure", "FlowlinePressure", "FlowlineTemperature", "WellheadTubingPressure"])
+plt.xlabel('Time')
+plt.ylabel('Volume')
+plt.title('Predictors vs Time')
 plt.show()
 #as you can see from this graph, volume has a negative linear relationship with time, so does CasingAPressure, FlowlinePressure, Flowline Temperature, WellheadTubingPressure
 
@@ -176,38 +180,40 @@ finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cu
 sectionsize = finalcats.groupby(['section']).size()
 #check the size of each section
 
+
+
 #plt histogram
 plt.hist(finalcats.Values, bins=500)
 
-import plotly.plotly as py
-import plotly.graph_objs as go
+plt.hist(sectionsize, bins=500)
+#Histogram of the value
+#seaborn plot
+#g = sns.FacetGrid(finalcats, col='Survived')
+#g.map(plt.hist, 'Age', bins=20)
 
-data = [go.Histogram(x=finalcats.Values,
-                     histnorm='probability')]
+###This turns our NOT or DEF into Binary Data 1 or 0.
+from sklearn.preprocessing import LabelEncoder
+number = LabelEncoder()
+finalcats['Categories'] = number.fit_transform(finalcats['Categories'].astype('str'))
+#This Puts the Categories into 1 or 0. 
+#1 is NOT. 0 is DEF.
 
-py.iplot(data, filename='histogram')
+## Feature Scaling
+#from sklearn.preprocessing import StandardScaler
+#sc = StandardScaler()
+#X_train = sc.fit_transform(X_train)
+#X_test = sc.transform(X_test)
 
 
-
-
-##
-##finalcats['Timestamp'] = ogclean['Timestamp']
-##finalcats.plot(x="Timestamp", y = ["Categories","Values")
-##plt.show()
-#spotfire
-#histogram
-   
-
-##len(in between)
     ##
    ####
  ########    
 ##########
 #####TREE####
 #split dataset in features and target variable###
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
-X = ogclean[feature_cols] # Features
-y = finalcats.Categories # Target variable
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
+X = final_cats[feature_cols] # Features
+y = final_cats.Categories # Target variable
 
 # Split dataset into training set and test set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
@@ -224,17 +230,25 @@ y_pred = clf.predict(X_test)
 print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
 ## 99% accuracy, as expected with the unbalanced data set.
 
-####Logistic Regression### we now have a binary response , DEF or NOT
 
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
-X = ogclean[feature_cols]
-y_log = finalcats.Categories
+########
+####Logistic Regression### we now have a binary response , DEF or NOT
+####
+##
+#
+
+
+#feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
+#X = final_cats[feature_cols] # Features
+#y = final_cats.Categories # Target variable
 LogReg = LogisticRegression() 
 LogReg.fit(X_train, y_train)
 y_pred = LogReg.predict(X_test)
 
 from sklearn.metrics import confusion_matrix
 confusion_matrix = confusion_matrix(y_test, y_pred)
+
+##
 
 
 ##Nueral Network
@@ -244,11 +258,13 @@ confusion_matrix = confusion_matrix(y_test, y_pred)
 
 #this might not work great because the data is negatively trending downward (data with a pattern dont have to worry about windowing?)
 
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
-X = ogclean[feature_cols]
-y_nueral = finalcats.Categories
+## Feature Scaling
+#from sklearn.preprocessing import StandardScaler
+#sc = StandardScaler()
+#X_train = sc.fit_transform(X_train)
+#X_test = sc.transform(X_test)
 
-    #x1 = casingpresure
+#x1 = casingpresure
 #x2 = temperature
 #y = DEF OR NOT
 
@@ -275,44 +291,187 @@ y_nueral = finalcats.Categories
 
 
 
+##*******
+###Final Cats all in one  DF
+
+final_cats = pd.DataFrame(ogclean)
+final_cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
+
+final_cats.loc[final_cats.Volume>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+final_cats.loc[final_cats.Volume<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
+
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()
+
+for n, g in final_cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+    if 0 not in g.Volume.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+        final_cats.loc[g.index, 'Categories'] = 'DEF'
+
+for n, g in final_cats.groupby('section'):
+    if 'HUM' in g.Categories.values:
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
+
+for n, g in final_cats.groupby('section'):
+    if 'REG' in g.Categories.values:
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
+        
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()        
+
+
+
+###This turns our NOT or DEF into Binary Data 1 or 0.
+from sklearn.preprocessing import LabelEncoder
+number = LabelEncoder()
+final_cats['Categories'] = number.fit_transform(final_cats['Categories'].astype('str'))
+
+
+##split dataset
+
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
+X = final_cats[feature_cols] # Features
+y = final_cats.Categories # Target variable
+
+# Split dataset into training set and test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+
+
+##*******
+##SVM
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)  # Don't cheat - fit only on training data
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+#y_train = scaler.transform(y_train)
+#y_test = scaler.transform(y_test)
+
+from sklearn.linear_model import SGDClassifier
+
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = final_cats[feature_cols] # Features
+y = final_cats.Categories
+clf_sgd = SGDClassifier(loss="log", penalty="l2", max_iter=5)
+clf_sgd.fit(X_train, y_train)
+
+
+#clf_prob = SGDClassifier(loss="log", max_iter=5).fit(X_train, y_train)
+#clf_prob.predict_proba(X_test)
+
+clf_pred = clf_sgd.predict(X_test)
+
+
+from sklearn.metrics import confusion_matrix
+
+confusion_matrix = confusion_matrix(y_test, clf_pred)
+
+sum((clf_pred - y_test)^2)
+
+
+###DATETIME STUFF
+#Subsetting the dataset
+#Index 11856 marks the end of year 2013
+
+#Starting the dataset from this time. (58084)
+#10/4/2017  1:00:00 AM
+from datetime import datetime
+
+my_year = 2017
+my_month = 10
+my_day = 4
+my_hour = 1
+my_minute = 0
+
+my_date = datetime(my_year,my_month,my_day,my_hour,my_minute)
+
+try_date = datetime(final_cats['Timestamp'])
+
+
+dt_ind = pd.DatetimeIndex(final_cats['Timestamp'])
+
+[datetime.strptime(i, '%Y-%m-%d-%h-%m') for i in final_cats['Timestamp']]
+
+datetime.strptime(final_cats['Timestamp'], '%Y-%m-%d-%h-%m')
+
+     
+df.index = df.Timestamp
+
+
+(df.Datetime,format='%d-%m-%Y %H:%M') 
+
+
+
+###
+
+=
 
 
 
 
 
 
+#Creating train and test set 
+#Index 10392 marks the end of October 2013 
+
+##ARIMA
+
+from statsmodels.tsa.arima_model import ARIMA
+model = ARIMA(finalcats['Values'], order=(5, 1, 0))
+model_fit = model.fit(disp=0)
+print(model_fit.summary())
+
+###
+
+ogclean['Categories'] =finalcats['Categories']
+finalcats['Categories']
+
+##Rolling
+
+og_no_timestamp = ogclean
+
+og_no_timestamp['Categories'] = finalcats['Categories']
 
 
 
+og_no_timestamp = og_no_timestamp.drop(columns = ['Timestamp'])
+
+rolling_three = og_no_timestamp.rolling(1440).mean()
+
+y = ogclean.resample('MS').mean()
+
+yhat = model_fit.predict(len(finalcats), len(finalcats), typ='levels')
+print(yhat)
+
+shifted_forward = og_no_timestamp.shift(1440)
+
+def window(iterable, size=2):
+    i = iter(iterable)
+    win = []
+    for e in range(0, size):
+        win.append(next(i))
+    yield win
+    for e in i:
+        win = win[1:] + [e]
+        yield win
 
 
+df =  ogclean 
 
+train=df[0:300000] 
+test=df[300001:]
 
+#df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Aggregating the dataset at daily level
+df.Timestamp = pd.to_datetime(df.Datetime,format='%d-%m-%Y %H:%M') 
+df.index = df.Timestamp 
+df = df.resample('D').mean()
+train.Timestamp = pd.to_datetime(train.Datetime,format='%d-%m-%Y %H:%M') 
+train.index = train.Timestamp 
+train = train.resample('D').mean() 
+test.Timestamp = pd.to_datetime(test.Datetime,format='%d-%m-%Y %H:%M') 
+test.index = test.Timestamp 
+test = test.resample('D').mean()
 
 
 
@@ -336,6 +495,45 @@ y_nueral = finalcats.Categories
 
 #all below was unused code but I would like to keep it in the file as comments in case I want to reference it in the future.
 #grouping stats for modelling
+
+#plotly
+#import plotly.plotly as py
+#import plotly.graph_objs as go
+#data = [go.Histogram(x=finalcats.Values,
+#                     histnorm='probability')]
+#py.iplot(data, filename='histogram')
+    
+#import lightgbm as lgb
+#d_train = lgb.Dataset(X_train, label=y_train)
+#params = {}
+#params['learning_rate'] = 0.003
+#params['boosting_type'] = 'gbdt'
+#params['objective'] = 'binary'
+#params['metric'] = 'binary_logloss'
+#params['sub_feature'] = 0.5
+#params['num_leaves'] = 10
+#params['min_data'] = 50
+#params['max_depth'] = 10
+#clf_1 = lgb.train(params, d_train, 100)
+#
+#
+##Prediction
+#y_pred=clf_1.predict(X_test)
+##convert into binary values
+#for i in range(0,99):
+#    if y_pred[i]>=.5:       # setting threshold to .5
+#       y_pred[i]=1
+#    else:  
+#       y_pred[i]=0
+#       
+#       
+#
+#
+#cm = confusion_matrix(y_test, y_pred)
+##Accuracy
+#from sklearn.metrics import accuracy_score
+#accuracy=accuracy_score(y_pred,y_test)
+
 #below stdev list (comeback to this)
 #belowstdev = []
 #human = []
