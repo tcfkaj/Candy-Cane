@@ -7,7 +7,7 @@ suppressMessages(library(xts, quietly=TRUE, warn.conflicts=FALSE))
 cc.data <- read.csv("../cc_data_band_timed_234sd_7K_2.csv", header=T)
 Thresholds <- cc.data[, c("km.cls", "pred.exp", "pred.band", "pred.band3sd", "pred.band4sd")]
 TS <- cc.data$Timestamp
-cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Flow.Temp", "Vol.Day", "Tub.Pr")]
+cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Vol.Day", "Tub.Pr")]
 
 names(cc.data)
 names(Thresholds)
@@ -134,7 +134,7 @@ print("Labeling data...")
 # threshold <- c(sectionA, sectionB, sectionC)
 
 
-threshold = Thresholds$pred.band
+threshold = Thresholds$pred.band4sd
 
 some_data <- cc.data$Vol.Day
 labs <- c()
@@ -170,45 +170,6 @@ cc.data <- cc.data %>%
 head(cc.data)
 
 proc.time() - ptm
-
-
-#############################################
-############ Break up deferments ############
-#############################################
-
-## Define buffers around first deferment point
-buffer_0 = 60
-buffer_1 = 60
-
-
-# HUM
-runs <- rle(cc.data$Labs == "HUM")
-size <- buffer_0 + buffer_1
-HUM_subs <- c(1:size)
-length(HUM_subs)
-
-for  (x in 2:length(runs$values)){
-	if(runs$values[x]){
-		i <- sum(runs$lengths[1:(x-1)]) + 1
-		take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
-		print(length(take))
-		HUM_subs <- rbind(HUM_subs, take)
-	}
-}
-
-HUM_subs <- HUM_subs[-1,]
-dim(HUM_subs)
-typeof(HUM_subs)
-
-write.table(HUM_subs,
-	    file="../HUM_subs.csv",
-	    sep=",",
-	    col.names=F,
-	    row.names=F)
-
-
-
-
 
 
 
@@ -295,69 +256,65 @@ head(cc.data)
 #################################
 
 
-print("Graphing...")
-ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Next.24)) +
-	geom_point() +
-	geom_vline(xintercept=splitsAB) +
-	geom_vline(xintercept=splitsBC) +
-	geom_line(aes(y=threshold[1:nrow(cc.data)],
-		      color="threshold")) +
-ggtitle("Colored by whether there is a deferment or not in next 24")
+# print("Graphing...")
+# ggplot(data=cc.data, aes(x=c(1:nrow(cc.data)), y=Vol.Day, color=Next.24)) +
+#         geom_point() +
+#         geom_line(aes(y=threshold[1:nrow(cc.data)],
+#                       color="threshold")) +
+# ggtitle("Colored by whether there is a deferment or not in next 24")
+#
+#
+# ggplot(data=cc.data, aes(x=c(1:nrow(cc.data)), y=Vol.Day, color=Labs)) +
+#         geom_point() +
+#         geom_line(aes(y=threshold[1:nrow(cc.data)],
+#                       color="threshold")) +
+# ggtitle("Colored based on present label")
+#
 
-
-ggplot(data=cc.data, aes(x=time, y=Vol.Day, color=Labs)) +
-	geom_point() +
-	geom_vline(xintercept=splitsAB) +
-	geom_vline(xintercept=splitsBC) +
-	geom_line(aes(y=threshold[1:nrow(cc.data)],
-		      color="threshold")) +
-ggtitle("Colored based on present label")
-
-
-#################################################
-############# Detrend with line fit #############
-#################################################
+#############################################################
+############# Detrend with line fit - maybe not #############
+#############################################################
 
 ## Vol.Day
-model <- lm(Vol.Day^2~time, data=cc.data)
-fit <- sqrt(fitted(model))
+# model <- lm(Vol.Day^2~time, data=cc.data)
+# fit <- sqrt(fitted(model))
 
 # ggplot(data=cc.data, aes(x=time, y=Vol.Day, color="Vol.Day")) +
 #         geom_point() +
 #         geom_line(aes(y=fit, color="Fit")) +
 #         ggtitle("Vol.Day^2")
 
-cc.data$Vol.Day <- cc.data$Vol.Day - fit
+# cc.data$Vol.Day <- cc.data$Vol.Day - fit
 # ggplot(data=cc.data, aes(x=time, y=Vol.Day, color="Vol.Day")) +
 #         geom_point() +
 #         ggtitle("Vol.Day Detrended")
 
 ## Cas.A.Pr
-model <- lm(log(Cas.A.Pr)~time, data=cc.data)
-fit <- exp(fitted(model))
+# model <- lm(log(Cas.A.Pr)~time, data=cc.data)
+# fit <- exp(fitted(model))
 
 # ggplot(data=cc.data, aes(x=time, y=Cas.A.Pr, color="Cas.A.Pr")) +
 #         geom_point() +
 #         geom_line(aes(y=fit, color="Fit")) +
 #         ggtitle("log(Cas.A.Pr)")
 
-cc.data$Cas.A.Pr <- cc.data$Cas.A.Pr - fit
+# cc.data$Cas.A.Pr <- cc.data$Cas.A.Pr - fit
 # ggplot(data=cc.data, aes(x=time, y=Cas.A.Pr, color="Cas.A.Pr")) +
 #         geom_point() +
 #         ggtitle("Cas.A.Pr Detrended")
 
 ## Flow.Pr
-model <- lm(Flow.Pr^2~time, data=cc.data)
-fit <- sqrt(fitted(model))
+# model <- lm(Flow.Pr^2~time, data=cc.data)
+# fit <- sqrt(fitted(model))
 
-cc.data$Flow.Pr <- cc.data$Flow.Pr - fit
+# cc.data$Flow.Pr <- cc.data$Flow.Pr - fit
 # ggplot(data=cc.data, aes(x=time, y=Flow.Pr, color="Flow.Pr")) +
 #         geom_point() +
 #         ggtitle("Flow.Pr Detrended")
 
 ## Flow.Temp
-model <- lm(Flow.Temp~time, data=cc.data)
-fit <- fitted(model)
+# model <- lm(Flow.Temp~time, data=cc.data)
+# fit <- fitted(model)
 
 # ggplot(data=cc.data, aes(x=time, y=Flow.Temp, color="Flow.Temp")) +
 #         geom_point() +
@@ -365,37 +322,91 @@ fit <- fitted(model)
 #         ggtitle("Flow.Temp")
 
 
-cc.data$Flow.Temp <- cc.data$Flow.Temp - fit
+# cc.data$Flow.Temp <- cc.data$Flow.Temp - fit
 # ggplot(data=cc.data, aes(x=time, y=Flow.Temp, color="Flow.Temp")) +
 #         geom_point() +
 #         ggtitle("Flow.Temp Detrended")
 
 ## Tub.Pr
-model <- lm(Tub.Pr~time, data=cc.data)
-fit <- fitted(model)
+# model <- lm(Tub.Pr~time, data=cc.data)
+# fit <- fitted(model)
 
 # ggplot(data=cc.data, aes(x=time, y=Tub.Pr, color="Tub.Pr")) +
 #         geom_point() +
 #         geom_line(aes(y=fit, color="Fit")) +
 #         ggtitle("Tub.Pr")
 
-cc.data$Tub.Pr <- cc.data$Tub.Pr - fit
+# cc.data$Tub.Pr <- cc.data$Tub.Pr - fit
 # ggplot(data=cc.data, aes(x=time, y=Tub.Pr, color="Tub.Pr")) +
 #         geom_point() +
 #         geom_line(aes(y=fit, color="Fit")) +
 #         ggtitle("Tub.Pr Detrended")
 
 
-r = 30
-place.time <- cc.data$time[1:(nrow(cc.data)-r+1)]
-place.Next <- cc.data$Next.24[r:nrow(cc.data)]
-glimpse(cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))])
+#####################################################
+############# Detrend with differencing #############
+#####################################################
 
+print("Detrending...")
+cc.data$time <- c(1:nrow(cc.data))
+place.time <- cc.data$time[1:(nrow(cc.data)-1)]
+place.Next <- cc.data$Next.24[2:nrow(cc.data)]
+place.Labs <- cc.data$Labs[2:nrow(cc.data)]
 cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))] %>%
-	mutate_all(function(x) rollmeanr(x,r, na.pad=TRUE)) %>%
+	mutate_all(function(x){return(c(diff(x),NA))}) %>%
 	na.omit() %>%
-	mutate(time=place.time, Next.24=place.Next)
+	mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
 head(cc.data)
+
+
+
+####################################
+######### Filter and scale #########
+####################################
+
+cc.data %>%
+	sapply(function(x){sum(is.na(x))})
+which(is.na(cc.data$Vol.Day))
+
+ptm <- proc.time()
+print("Rolling, rolling, rolling...")
+r = 1440
+
+for (i in c("Vol.Day",
+	    "Cas.A.Pr",
+	    "Flow.Pr",
+	    "Tub.Pr")){
+	x  <- cc.data[,i]
+	cc.data[,paste(i,"MA", sep="")] <- rollmeanr(x,r, fill=NA)
+	cc.data[,paste(i,"MAX", sep="")] <- rollmaxr(x,r, fill=NA)
+	cc.data[,paste(i,"MIN", sep="")] <- rollapplyr(x,r,min, fill=NA)
+	cc.data[,paste(i,"SD", sep="")] <- rollapplyr(x,r,sd, fill=NA)
+}
+
+cc.data %>%
+	sapply(function(x){sum(is.na(x))})
+which(is.na(cc.data$Vol.Day))
+
+cc.data <- cc.data %>%
+	na.omit()
+
+cc.data %>%
+	sapply(function(x){sum(is.na(x))})
+which(is.na(cc.data$Vol.Day))
+
+# place.time <- cc.data$time[1:(nrow(cc.data)-r+1)]
+# place.Next <- cc.data$Next.24[r:nrow(cc.data)]
+# glimpse(cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))])
+#
+# cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))] %>%
+#         mutate_all(function(x) rollmeanr(x,r, na.pad=TRUE)) %>%
+#         na.omit() %>%
+#         mutate(time=place.time, Next.24=place.Next)
+# head(cc.data)
+
+dim(cc.data)
+proc.time() - ptm
+
 
 # ggplot(data=cc.data, aes(x=time))+
 #         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
@@ -415,14 +426,15 @@ head(cc.data)
 # ggtitle("Candy Cane Well- After detrend and MA-30 Filter") +
 # theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
-
+# Scale
+print("Scaling...")
 place.time <- cc.data$time
 place.Next <- cc.data$Next.24
-cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24"))] %>%
+place.Labs <- cc.data$Labs
+cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24", "Labs"))] %>%
 	mutate_all(function(x){(x - min(x))/(max(x)-min(x))}) %>%
-	mutate(time=place.time, Next.24=place.Next)
+	mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
 
-head(cc.data)
 
 # ggplot(data=cc.data, aes(x=time))+
 #         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
@@ -443,5 +455,5 @@ head(cc.data)
 # theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
 
-# print("Writing to csv...")
-# write.csv(cc.data, file="../RNN-ready-DT-MA30-NORM.csv")
+print("Writing to csv...")
+write.csv(cc.data, file="../Rolled-and-Labeled.csv")
