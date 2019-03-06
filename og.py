@@ -67,7 +67,7 @@ ogclean.loc[ogclean['WellheadTubingPressure'] == "The time is invalid"] = "847.9
 #10/4/2017  1:00:00 AM
 
 #data missingness map
-#ogclean = ogclean.iloc[54425:,] #this is from the place when volume began (if interested)
+#ogclean = ogclean.iloc[54423:,] #this is from the place when volume began (if interested)
 ogclean = ogclean.iloc[58084:,] #This is when the volume starts to consistenly hover around 8000. 
 #Everything before this point was either the run up in volume or would skew our deferments (would pass our threshold quite often if we started before this)
 
@@ -119,90 +119,173 @@ flp_v = ogclean['Volume'].corr(ogclean['FlowlinePressure']) #flowlinepressure co
 flt_v = ogclean['Volume'].corr(ogclean['FlowlineTemperature']) #flowlinetemperature correlation with volume
 cap_v = ogclean['Volume'].corr(ogclean['CasingAPressure']) #casingapressure correlation with volume
 
-corrdf = Series({'WTB_V': wtp_v,'FLP_V': flp_v,'FLT_V': flt_v,'CAP_V': cap_v})
+corrdf = Series({'TubingPressure': wtp_v,'FLowlinePressure': flp_v,'FLowlineTemperature': flt_v,'CasingAPressure': cap_v})
 print("Correlation Matrix with Volume: \n",corrdf)
 #WTP_V is WellheadTubingPressure and Volume (.631863)
 #FLP_V is FlowlinePressure and Volume (.902992)
 #FlT_V is FLowlineTemperature and Volume (.510193)
 #CAP_V is CasingAPressure and Volume (.835090)
+
+ogclean.head()
+
 ## As we can see they are all highly correlated with volume and Flowline Pressure is the highest
 
-#####Categorization#############
-      
-vol_list = [] #create list to store values for Volume (when Volume is an array or Series it does not work so we make it a list)
-for i in ogclean['Volume']: #search through column Volume
-    vol_list.append(i) #add volume to volume list
+###Final Cats all in one  DF
 
-cats = pd.DataFrame(vol_list, columns=['Values']) #create new dataframe cats to store categories 
-cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
+final_cats = pd.DataFrame(ogclean)
+final_cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
 
-cats.loc[cats.Values>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
-cats.loc[cats.Values<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
+final_cats.loc[final_cats.Volume>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+final_cats.loc[final_cats.Volume<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
 
-cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
-#To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()
 
-sectionsize = cats.groupby(['section']).size() #this shows for the size of the sections, very interesting
-sectionmedian = cats.groupby(['section']).median() #this shows the median for each section
-#This is very interesting for data exploration
-sectionmean = cats.groupby('section').mean()
+for n, g in final_cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+    if 0 not in g.Volume.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+        final_cats.loc[g.index, 'Categories'] = 'DEF'
 
-for n, g in cats.groupby('section'): #search through section by grouping them together and looking for their values and 
-    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
-        cats.loc[g.index, 'Categories'] = 'DEF' #this locates all the indexes within our grouped sections and replaces them to DEF
-
-for name, group in cats.groupby('section'):
-    print(name)
-    print(group)
-#This allows you to check out each section individually (we should drop the last section off as a DEF bc volume goes below 4000 and bc the well is dying at this point.)
-        
-print(cats)
-
-######## 3 Categories to 2 ########
-
-finalcats = cats #make a copy DF to go from 3 variables, HUM,REG,and DEF, to NOT DEF or DEF.
-
-for name, group in finalcats.groupby('section'):
-    print(name)
-    print(group) #this is great for checking to see if it worked (it does)
-
-for n, g in finalcats.groupby('section'):
+for n, g in final_cats.groupby('section'):
     if 'HUM' in g.Categories.values:
-        finalcats.loc[g.index, 'Categories'] = 'NOT'
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
 
-for n, g in finalcats.groupby('section'):
+for n, g in final_cats.groupby('section'):
     if 'REG' in g.Categories.values:
-        finalcats.loc[g.index, 'Categories'] = 'NOT'
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
         
-        #We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
-finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cumsum() 
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum() 
 
-sectionsize = finalcats.groupby(['section']).size()
-#check the size of each section
+sectionsize = final_cats.groupby(['section']).size() 
 
 
+#######
+###Stephens Threshold
+##time 19619
+
+cc = pd.read_csv("CC.csv")
+##
+
+final_cats = pd.DataFrame(cc)
+threshold = final_cats.loc[:, "pred.band4sd"]
+
+final_cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
+
+final_cats.loc[final_cats.Volume>=threshold, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+final_cats.loc[final_cats.Volume<threshold, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
+
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()
+
+for n, g in final_cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+    if 0 not in g.Volume.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+        final_cats.loc[g.index, 'Categories'] = 'DEF'
+
+for n, g in final_cats.groupby('section'):
+    if 'HUM' in g.Categories.values:
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
+
+for n, g in final_cats.groupby('section'):
+    if 'REG' in g.Categories.values:
+        final_cats.loc[g.index, 'Categories'] = 'NOT'
+        
+final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum() 
+
+sectionsize = final_cats.groupby(['section']).size() 
+
+
+####
+
+
+##CONVERT TIMESTAMP
+
+final_cats['Datetime'] = pd.to_datetime(final_cats['Timestamp'], errors='coerce')
+final_cats.set_index('Datetime',inplace=True)
+ogclean['Volume'].describe()
+
+
+
+from sklearn.metrics import mean_squared_error
+
+
+###This turns our NOT or DEF into Binary Data 1 or 0.
+from sklearn.preprocessing import LabelEncoder
+number = LabelEncoder()
+final_cats['Categories'] = number.fit_transform(final_cats['Categories'].astype('str'))
+
+##1 is NOT
+##0 is DEF
+
+##Drop Timestamp column, and sections
+final_cats = final_cats.drop(columns = ['Timestamp','section'])
+
+
+
+daily_groups = final_cats.resample('D')
+daily_data = daily_groups.sum()
+
+
+jarrod_excel = final_cats.to_excel("JData.xlsx")
+
+# summarize
+print(daily_data.shape)
+print(daily_data.head())
+
+
+###
+
+#export_excel = final_cats.to_excel("Data.xlsx")
+
+target = final_cats.Categories
 
 #plt histogram
-plt.hist(finalcats.Values, bins=500)
-
-plt.hist(sectionsize, bins=500)
+plt.hist(final_cats.Volume, bins=500)
+plt.hist(final_cats['Categories' == 1], bins=200)
 #Histogram of the value
 #seaborn plot
 #g = sns.FacetGrid(finalcats, col='Survived')
 #g.map(plt.hist, 'Age', bins=20)
 
-###This turns our NOT or DEF into Binary Data 1 or 0.
-from sklearn.preprocessing import LabelEncoder
-number = LabelEncoder()
-finalcats['Categories'] = number.fit_transform(finalcats['Categories'].astype('str'))
-#This Puts the Categories into 1 or 0. 
-#1 is NOT. 0 is DEF.
+target = final_cats.Categories
+final_cats = final_cats.drop(columns = ['Categories'])
 
-## Feature Scaling
-#from sklearn.preprocessing import StandardScaler
-#sc = StandardScaler()
-#X_train = sc.fit_transform(X_train)
-#X_test = sc.transform(X_test)
+#Difference Data
+final_cats.plot()
+final_cats = final_cats - final_cats.shift(1)
+final_cats = final_cats.dropna()
+final_cats.plot()
+
+
+##Split into Test/Training Data
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = final_cats[feature_cols] # Features
+y = target[1:] # Target variable
+
+
+#TEST/TRAIN SPLIT
+#from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, shuffle=False)
+
+
+
+##Standardize data
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train) 
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+##Split into Test/Training Data
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
+X = final_cats[feature_cols] # Features
+y = final_cats.Categories # Target variable
+
+
+
+#TEST/TRAIN SPLIT
+#from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, shuffle=False)
+
 
 
     ##
@@ -211,12 +294,11 @@ finalcats['Categories'] = number.fit_transform(finalcats['Categories'].astype('s
 ##########
 #####TREE####
 #split dataset in features and target variable###
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
-X = final_cats[feature_cols] # Features
-y = final_cats.Categories # Target variable
-
+#feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
+#X = final_cats[feature_cols] # Features
+#y = final_cats.Categories # Target variable
 # Split dataset into training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1) # 70% training and 30% test
 
 # Create Decision Tree classifer object
 clf = DecisionTreeClassifier()
@@ -233,7 +315,6 @@ print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
 
 ########
 ####Logistic Regression### we now have a binary response , DEF or NOT
-####
 ##
 #
 
@@ -248,7 +329,225 @@ y_pred = LogReg.predict(X_test)
 from sklearn.metrics import confusion_matrix
 confusion_matrix = confusion_matrix(y_test, y_pred)
 
-##
+###*******
+##SVM
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)  # Don't cheat - fit only on training data
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+#y_train = scaler.transform(y_train)
+#y_test = scaler.transform(y_test)
+
+###SVM
+
+from sklearn.linear_model import SGDClassifier
+
+clf_sgd = SGDClassifier(loss="log", penalty="l2", max_iter=20, class_weight = 'balanced', learning_rate = 'optimal')
+clf_sgd.fit(X_train, y_train)
+
+
+#clf_prob = SGDClassifier(loss="log", max_iter=5).fit(X_train, y_train)
+#clf_prob.predict_proba(X_test)
+
+clf_pred = clf_sgd.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+
+confusion_matrix = confusion_matrix(y_test, clf_pred)
+
+
+
+
+
+
+
+
+#####STEVEN CODE
+#####
+
+
+#cc_labs = pd.read_csv("cc_labs_234sd.csv")
+
+cc_data_band = pd.read_csv("CC.csv")
+
+vol_list = cc_data_band.loc[:, "Vol.Day"]
+vol_list = list(vol_list)
+
+cats = pd.DataFrame(vol_list, columns=['Values']) #create new dataframe cats to store categories 
+cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
+
+threshold = cc_data_band.loc[:, "pred.band4sd"]
+
+cats.loc[cats.Values>=threshold, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+cats.loc[cats.Values<threshold, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
+
+cats.Categories.value_counts()
+        
+cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
+#To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them
+
+sectionsize = cats.groupby(['section']).size() #this shows for the size of the sections, very interesting
+sectionmedian = cats.groupby(['section']).median() #this shows the median for each section
+#This is very interesting for data exploration
+sectionmean = cats.groupby('section').mean()
+
+for n, g in cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+        cats.loc[g.index, 'Categories'] = 'DEF' #this locates all the indexes within our grouped sections and replaces them to DEF
+
+#lab1 = cats["Categories"]
+#lab2 = cats["Categories"]
+#lab3 = cats["Categories"]
+#
+#cc_labs = pd.DataFrame({"lab_2sd":lab1, "lab_3sd":lab2, "lab_4sd":lab3})
+#
+#cc_labs.to_csv("cc_labs_234sd_python.csv", index=0)
+
+
+for n, g in cats.groupby('section'):
+    if 'HUM' in g.Categories.values:
+        cats.loc[g.index, 'Categories'] = 'NOT'
+
+for n, g in cats.groupby('section'):
+    if 'REG' in g.Categories.values:
+        cats.loc[g.index, 'Categories'] = 'NOT'
+        
+        #We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
+cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
+
+sectionsize = cats.groupby(['section']).size()
+
+
+
+##ARIMA
+
+
+feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure','Volume']
+X = final_cats[feature_cols] # Features
+y = target
+
+from statsmodels.tsa.arima_model import ARIMA
+model = ARIMA(final_cats['Volume'], order=(1, 1, 0))
+model_fit = model.fit(disp=0)
+print(model_fit.summary())
+
+plt.plot(model_fit)
+plt.show()
+###
+
+model_fit.resid.plot()
+
+model_fit.resid.plot(kind='kde')
+
+
+final_cats['forecast'] = model_fit.predict(start = 180000, end=182147 , dynamic= True)  
+final_cats[['Volume','forecast']].plot(figsize=(10,10))
+
+
+##NUERAL 
+
+import tensorflow as tf
+from tensorflow.contrib import rnn
+
+class RNNGenerator:
+    def create_LSTM(self, inputs, weights, biases, seq_size, num_units):
+        # Reshape input to [1, sequence_size] and split it into sequences
+        inputs = tf.reshape(inputs, [-1, seq_size])
+        inputs = tf.split(inputs, seq_size, 1)
+    
+        # LSTM with 2 layers
+        rnn_model = rnn.MultiRNNCell([rnn.BasicLSTMCell(num_units),rnn.BasicLSTMCell(num_units)])
+    
+        # Generate prediction
+        outputs, states = rnn.static_rnn(rnn_model, inputs, dtype=tf.float32)
+    
+        return tf.matmul(outputs[-1], weights['out']) + biases['out']
+
+
+import math
+
+
+def evaluate_forecasts(actual, predicted):
+	scores = list()
+	# calculate an RMSE score for each day
+	for i in range(actual.shape[1]):
+		# calculate mse
+		mse = mean_squared_error(actual[:, i], predicted[:, i])
+		# calculate rmse
+		rmse = math.sqrt(mse)
+		# store
+		scores.append(rmse)
+	# calculate overall RMSE
+	s = 0
+	for row in range(actual.shape[0]):
+		for col in range(actual.shape[1]):
+			s += (actual[row, col] - predicted[row, col])**2
+	score = math.sqrt(s / (actual.shape[0] * actual.shape[1]))
+	return score, scores
+
+
+
+
+#timeseries = final_cats['Volume']
+#
+#timeseries.rolling(2).mean().plot(label='Day Rolling Mean')
+#timeseries.rolling(2).std().plot(label='Day Rolling Std')
+#timeseries.plot()
+#plt.legend()
+#
+#plt.plot(X_train[:,2])
+#plt.show()
+
+
+###VAR
+#
+#final_cats.dtypes
+#
+#final_cats = final_cats.drop(columns = ['Timestamp','section'])
+#    
+##final_cats['Timestamp'] = pd.to_datetime(final_cats.Timestamp , format = '%Y/%m/%d %H.%M.')
+#
+#var_plz.dtypes
+#
+#var_plz = final_cats
+#var_plz = var_plz.drop(columns = ['Timestamp','section'])
+#
+#var_plz['Categories'] = var_plz.Categories.astype(int)
+#
+#from statsmodels.tsa.vector_ar.var_model import VAR
+#
+#model = VAR(endog=X_train)
+#model_fit = model.fit()
+#
+#prediction = model_fit.forecast(model_fit.y, steps=len(X_test))
+#
+#cols = var_plz.columns
+#
+##converting predictions to dataframe
+#pred = pd.DataFrame(index=range(0,len(prediction)),columns=[cols])
+#for j in range(0,5):
+#    for i in range(0, len(prediction)):
+#       pred.iloc[i][j] = prediction[i][j]
+#
+from sklearn.metrics import mean_squared_error
+#import math
+#
+##check rmse
+#for i in cols:
+#    print('rmse value for', i, 'is : ', math.sqrt(mean_squared_error(pred[i], X_test[i])))
+#   
+#
+###LAGGING, took forever 
+#lags = range(1, 1441)  # Just two lags for demonstration.
+#
+#final_cats.assign(**{
+#    '{} (t-{})'.format(col, t): final_cats[col].shift(t)
+#    for t in lags
+#    for col in final_cats
+#})
 
 
 ##Nueral Network
@@ -288,208 +587,64 @@ confusion_matrix = confusion_matrix(y_test, y_pred)
 
 ###if a section of NOT is less than 1440 then there was a def within that 24 hour range so all of those NOTS / indexes of NOt are now equal to DEF
 ## IFFF the NOT section Is > 1440 you chop off the extra to until YOU MAKE THE CLOSEST 1440 a DEFERMENT (it can be 240) (if it is a long section like 4000, then it is only 1440 and the remaining 2600 are still NOT)
-
-
-
-##*******
-###Final Cats all in one  DF
-
-final_cats = pd.DataFrame(ogclean)
-final_cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
-
-final_cats.loc[final_cats.Volume>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
-final_cats.loc[final_cats.Volume<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
-
-final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()
-
-for n, g in final_cats.groupby('section'): #search through section by grouping them together and looking for their values and 
-    if 0 not in g.Volume.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
-        final_cats.loc[g.index, 'Categories'] = 'DEF'
-
-for n, g in final_cats.groupby('section'):
-    if 'HUM' in g.Categories.values:
-        final_cats.loc[g.index, 'Categories'] = 'NOT'
-
-for n, g in final_cats.groupby('section'):
-    if 'REG' in g.Categories.values:
-        final_cats.loc[g.index, 'Categories'] = 'NOT'
-        
-final_cats['section'] = (final_cats.Categories != final_cats.Categories.shift()).cumsum()        
-
-
-
-###This turns our NOT or DEF into Binary Data 1 or 0.
-from sklearn.preprocessing import LabelEncoder
-number = LabelEncoder()
-final_cats['Categories'] = number.fit_transform(final_cats['Categories'].astype('str'))
-
-
-##split dataset
-
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure', 'Volume']
-X = final_cats[feature_cols] # Features
-y = final_cats.Categories # Target variable
-
-# Split dataset into training set and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
-
-
-##*******
-##SVM
-
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
-scaler.fit(X_train)  # Don't cheat - fit only on training data
-X_train = scaler.transform(X_train)
-X_test = scaler.transform(X_test)
-
-#y_train = scaler.transform(y_train)
-#y_test = scaler.transform(y_test)
-
-from sklearn.linear_model import SGDClassifier
-
-feature_cols = ['WellheadTubingPressure', 'FlowlinePressure', 'FlowlineTemperature', 'CasingAPressure']
-X = final_cats[feature_cols] # Features
-y = final_cats.Categories
-clf_sgd = SGDClassifier(loss="log", penalty="l2", max_iter=5)
-clf_sgd.fit(X_train, y_train)
-
-
-#clf_prob = SGDClassifier(loss="log", max_iter=5).fit(X_train, y_train)
-#clf_prob.predict_proba(X_test)
-
-clf_pred = clf_sgd.predict(X_test)
-
-
-from sklearn.metrics import confusion_matrix
-
-confusion_matrix = confusion_matrix(y_test, clf_pred)
-
-sum((clf_pred - y_test)^2)
-
-
-###DATETIME STUFF
-#Subsetting the dataset
-#Index 11856 marks the end of year 2013
-
-#Starting the dataset from this time. (58084)
-#10/4/2017  1:00:00 AM
-from datetime import datetime
-
-my_year = 2017
-my_month = 10
-my_day = 4
-my_hour = 1
-my_minute = 0
-
-my_date = datetime(my_year,my_month,my_day,my_hour,my_minute)
-
-try_date = datetime(final_cats['Timestamp'])
-
-
-dt_ind = pd.DatetimeIndex(final_cats['Timestamp'])
-
-[datetime.strptime(i, '%Y-%m-%d-%h-%m') for i in final_cats['Timestamp']]
-
-datetime.strptime(final_cats['Timestamp'], '%Y-%m-%d-%h-%m')
-
-     
-df.index = df.Timestamp
-
-
-(df.Datetime,format='%d-%m-%Y %H:%M') 
-
-
-
-###
-
-=
-
-
-
-
-
-
-#Creating train and test set 
-#Index 10392 marks the end of October 2013 
-
-##ARIMA
-
-from statsmodels.tsa.arima_model import ARIMA
-model = ARIMA(finalcats['Values'], order=(5, 1, 0))
-model_fit = model.fit(disp=0)
-print(model_fit.summary())
-
-###
-
-ogclean['Categories'] =finalcats['Categories']
-finalcats['Categories']
-
-##Rolling
-
-og_no_timestamp = ogclean
-
-og_no_timestamp['Categories'] = finalcats['Categories']
-
-
-
-og_no_timestamp = og_no_timestamp.drop(columns = ['Timestamp'])
-
-rolling_three = og_no_timestamp.rolling(1440).mean()
-
-y = ogclean.resample('MS').mean()
-
-yhat = model_fit.predict(len(finalcats), len(finalcats), typ='levels')
-print(yhat)
-
-shifted_forward = og_no_timestamp.shift(1440)
-
-def window(iterable, size=2):
-    i = iter(iterable)
-    win = []
-    for e in range(0, size):
-        win.append(next(i))
-    yield win
-    for e in i:
-        win = win[1:] + [e]
-        yield win
-
-
-df =  ogclean 
-
-train=df[0:300000] 
-test=df[300001:]
-
-#df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-
-#Aggregating the dataset at daily level
-df.Timestamp = pd.to_datetime(df.Datetime,format='%d-%m-%Y %H:%M') 
-df.index = df.Timestamp 
-df = df.resample('D').mean()
-train.Timestamp = pd.to_datetime(train.Datetime,format='%d-%m-%Y %H:%M') 
-train.index = train.Timestamp 
-train = train.resample('D').mean() 
-test.Timestamp = pd.to_datetime(test.Datetime,format='%d-%m-%Y %H:%M') 
-test.index = test.Timestamp 
-test = test.resample('D').mean()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+##
+
+
+
+######Categorization#############
+#      
+#vol_list = [] #create list to store values for Volume (when Volume is an array or Series it does not work so we make it a list)
+#for i in ogclean['Volume']: #search through column Volume
+#    vol_list.append(i) #add volume to volume list
+#
+#cats = pd.DataFrame(vol_list, columns=['Values']) #create new dataframe cats to store categories 
+#cats['Categories'] = '' #create a new column in Cats that will consist of strings (labels)
+#
+#cats.loc[cats.Values>=4000, 'Categories'] = 'REG' #initial category (if it is above threshold it is always REG)
+#cats.loc[cats.Values<4000, 'Categories'] = 'HUM' #anything below 4000 we will categorize as HUM, then if 0 is Not in that section we will change it to DEF.
+#
+#cats['section'] = (cats.Categories != cats.Categories.shift()).cumsum() 
+##To tell 'HUM' sections with 0 in Values from those without, we mark all sections with a different number to be able to group them
+#
+#sectionsize = cats.groupby(['section']).size() #this shows for the size of the sections, very interesting
+#sectionmedian = cats.groupby(['section']).median() #this shows the median for each section
+##This is very interesting for data exploration
+#sectionmean = cats.groupby('section').mean()
+#
+#for n, g in cats.groupby('section'): #search through section by grouping them together and looking for their values and 
+#    if 0 not in g.Values.values and 'HUM' in g.Categories.values: #this is saying that if 0 is NOT in the group of values and HUM is, then this whole section is now DEF!
+#        cats.loc[g.index, 'Categories'] = 'DEF' #this locates all the indexes within our grouped sections and replaces them to DEF
+#
+#for name, group in cats.groupby('section'):
+#    print(name)
+#    print(group)
+##This allows you to check out each section individually (we should drop the last section off as a DEF bc volume goes below 4000 and bc the well is dying at this point.)
+#        
+#print(cats)
+
+#
+#
+######### 3 Categories to 2 ########
+#
+#finalcats = cats #make a copy DF to go from 3 variables, HUM,REG,and DEF, to NOT DEF or DEF.
+#
+#for name, group in finalcats.groupby('section'):
+#    print(name)
+#    print(group) #this is great for checking to see if it worked (it does)
+#
+#for n, g in finalcats.groupby('section'):
+#    if 'HUM' in g.Categories.values:
+#        finalcats.loc[g.index, 'Categories'] = 'NOT'
+#
+#for n, g in finalcats.groupby('section'):
+#    if 'REG' in g.Categories.values:
+#        finalcats.loc[g.index, 'Categories'] = 'NOT'
+#        
+#        #We now have sections that were HUM/REG and they are now NOT, so we are going to shift sections so it is only DEF or NOT. (we have 52 sections now from 136 before)
+#finalcats['section'] = (finalcats.Categories != finalcats.Categories.shift()).cumsum() 
+#
+#sectionsize = finalcats.groupby(['section']).size()
+##check the size of each section
 
 
 
