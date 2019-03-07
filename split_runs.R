@@ -4,7 +4,7 @@ suppressMessages(library(imputeTS, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(zoo, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(xts, quietly=TRUE, warn.conflicts=FALSE))
 
-cc.data <- read.csv("../cc_data_band_timed_234sd_7K_2.csv", header=T)
+cc.data <- read.csv("../cc_data-chopped-start-here.csv", header=T)
 Thresholds <- cc.data[, c("km.cls", "pred.exp", "pred.band", "pred.band3sd", "pred.band4sd")]
 TS <- cc.data$Timestamp
 cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Flow.Temp", "Vol.Day", "Tub.Pr")]
@@ -119,22 +119,7 @@ which(is.na(cc.data$Vol.Day))
 ptm <- proc.time()
 print("Labeling data...")
 
-# splitsAB <- 72000
-# splitsBC <- 185000
-#
-# A <- suppressWarnings(lm(Vol.Day~time, data=cc.data[1:splitsAB,]))
-# B <- suppressWarnings(lm(Vol.Day~time,
-#                          data=cc.data[(splitsAB+1):splitsBC,]))
-# C <- suppressWarnings(lm(Vol.Day~time,
-#                          data=cc.data[(splitsBC+1):nrow(cc.data),]))
-#
-# sectionA <- predict(A, interval="prediction", level=0.96)[,2]
-# sectionB <- predict(B, interval="prediction", level=0.96)[,2]
-# sectionC <- predict(C, interval="prediction", level=0.96)[,2]
-# threshold <- c(sectionA, sectionB, sectionC)
-
-
-threshold = Thresholds$pred.band
+threshold = Thresholds$pred.band4sd
 
 some_data <- cc.data$Vol.Day
 labs <- c()
@@ -180,81 +165,152 @@ proc.time() - ptm
 buffer_0 = 60
 buffer_1 = 60
 
-
 # HUM
-# runs <- rle(cc.data$Labs == "HUM")
-# size <- buffer_0 + buffer_1
-# HUM_subs <- c(1:size)
-# length(HUM_subs)
+runs <- rle(cc.data$Labs == "HUM")
+runs
+size <- buffer_0 + buffer_1
+HUM_subs <- c(1:size)
+length(HUM_subs)
+HUMANS <- which(runs$values)
+ends = starts = c()
+for (i in HUMANS){
+	starts <- c(starts, (sum(runs$lengths[1:(i-1)])+1))
+	ends <- c(ends, sum(runs$lengths[1:i]))
+
+}
+
+df <- data.frame(start=starts, end=ends)
+
+print(df[c(12,14,15,32),])
+
+
+
+
+for  (x in 1:length(runs$values)){
+	if(runs$values[x]){
+		i <- sum(runs$lengths[1:(x-1)]) + 1
+		take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
+		print(length(take))
+		HUM_subs <- rbind(HUM_subs, take)
+	}
+}
+
+HUM_subs <- HUM_subs[-1,]
+dim(HUM_subs)
+typeof(HUM_subs)
+
+
+
+
+# ggplot(data=cc.data[106000:109000,], aes(x=c(106000:109000)))+
+#         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
+#         geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
+#         geom_line(aes(y=Vol.Day, color="Volume"))+
+#         geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
+#         labs(color="Legend") +
+#         scale_colour_manual("",breaks = c("Casing A Pr",
+#                                           "Flowline Pr",
+#                                           "Flowline Temp",
+#                                           "Volume",
+#                                           "Tubing Pr"),
+#                             values = c("darkgreen", "red",
+#                                        "orange", "black",
+#                                        "blue")) +
+# ggtitle("Timestep= 105000 to 110000") + xlab("Timestep") + ylab("Levels") +
+# theme(plot.title = element_text(lineheight=0.7, face="bold"))
+# ggsave("jackedup1.png",width=10, height=6)
 #
-# for  (x in 2:length(runs$values)){
-#         if(runs$values[x]){
-#                 i <- sum(runs$lengths[1:(x-1)]) + 1
-#                 take <- cc.data$Vol.Day[(i-buffer_0):(i+buffer_1-1)]
-#                 print(length(take))
-#                 HUM_subs <- rbind(HUM_subs, take)
-#         }
-# }
 #
-# HUM_subs <- HUM_subs[-1,]
-# dim(HUM_subs)
-# typeof(HUM_subs)
+# ggplot(data=cc.data[106700:107500,], aes(x=c(106700:107500)))+
+#         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
+#         geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
+#         geom_line(aes(y=Vol.Day, color="Volume"))+
+#         geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
+#         labs(color="Legend") +
+#         scale_colour_manual("",breaks = c("Casing A Pr",
+#                                           "Flowline Pr",
+#                                           "Flowline Temp",
+#                                           "Volume",
+#                                           "Tubing Pr"),
+#                             values = c("darkgreen", "red",
+#                                        "orange", "black",
+#                                        "blue")) +
+# ggtitle("Timestep= 106700 to 107500") + xlab("Timestep") + ylab("Levels") +
+# theme(plot.title = element_text(lineheight=0.7, face="bold"))
+# ggsave("jackedup1.png", width=10, height=6)
 #
+#
+# ggplot(data=cc.data, aes(x=c(1:nrow(cc.data))))+
+#         geom_line(aes(y=Cas.A.Pr, color="Casing A Pr"))+
+#         geom_line(aes(y=Flow.Pr, color="Flowline Pr"))+
+#         geom_line(aes(y=Vol.Day, color="Volume"))+
+#         geom_line(aes(y=Tub.Pr, color="Tubing Pr"))+
+#         labs(color="Legend") +
+#         scale_colour_manual("",breaks = c("Casing A Pr",
+#                                           "Flowline Pr",
+#                                           "Flowline Temp",
+#                                           "Volume",
+#                                           "Tubing Pr"),
+#                             values = c("darkgreen", "red",
+#                                        "orange", "black",
+#                                        "blue")) +
+# ggtitle("Time= Whole Data Set") +  xlab("Timestep") + ylab("Levels") +
+# theme(plot.title = element_text(lineheight=0.7, face="bold"))
+
 # write.table(HUM_subs,
 #             file="../HUM_subs.csv",
 #             sep=",",
 #             col.names=F,
 #             row.names=F)
 
-
 # Check out dist of REG's
-runs <- rle(cc.data$Labs)
-problems <- which(runs$values=="REG" & runs$lengths>3200)
-prob = minus1 = plus1 = ind =c()
-for (i in problems){
-	prob <- c(prob, runs$length[i])
-	minus1 <- c(minus1, runs$values[i-1])
-	plus1 <- c(plus1, runs$values[i+1])
-	ind <- c(ind, sum(runs$lengths[1:(i-1)]))
-}
-
-probDF <- data.frame(ind=ind, m1=minus1, prob=prob, p1=plus1)
-probDF[which(probDF$p1=="DEF"),]
-
-starting_points <- c()
-def_sp <- c()
-
-for (i in which(probDF$p1=="DEF")){
-	def_ind  <- probDF$ind[i] + probDF$prob[i]
-	reg_ind <- def_ind - 3000
-	def_sp <- c(def_sp, def_ind)
-	starting_points <- c(starting_points, reg_ind)
-	if (probDF$prob[i] > 15000){
-		start_here  <- probDF$ind[i]
-		starting_points <- c(starting_points, start_here+3000,
-				     start_here+4500, start_here+6000,
-				     start_here+7500, start_here+9000,
-				     start_here+10500)
-	}
-	if (probDF$prob[i] < 15000 & probDF$prob[i] > 12000){
-		start_here  <- probDF$ind[i]
-		starting_points <- c(starting_points, start_here+3000,
-				     start_here+4500, start_here+6000,
-				     start_here+7500, start_here+9000)
-	}
-	if (probDF$prob[i] < 12000 & probDF$prob[i] > 9000){
-		start_here  <- probDF$ind[i]
-		starting_points <- c(starting_points, start_here+3000,
-				     start_here+4500, start_here+6000)
-	}
-	if (probDF$prob[i] < 9000 & probDF$prob[i] > 6000){
-		start_here  <- probDF$ind[i]
-		starting_points <- c(starting_points, start_here+3000)
-	}
-}
-
-length(starting_points)
-length(def_sp)
+# runs <- rle(cc.data$Labs)
+# problems <- which(runs$values=="REG" & runs$lengths>3200)
+# prob = minus1 = plus1 = ind =c()
+# for (i in problems){
+#         prob <- c(prob, runs$length[i])
+#         minus1 <- c(minus1, runs$values[i-1])
+#         plus1 <- c(plus1, runs$values[i+1])
+#         ind <- c(ind, sum(runs$lengths[1:(i-1)]))
+# }
+#
+# probDF <- data.frame(ind=ind, m1=minus1, prob=prob, p1=plus1)
+# probDF[which(probDF$p1=="DEF"),]
+#
+# starting_points <- c()
+# def_sp <- c()
+#
+# for (i in which(probDF$p1=="DEF")){
+#         def_ind  <- probDF$ind[i] + probDF$prob[i]
+#         reg_ind <- def_ind - 3000
+#         def_sp <- c(def_sp, def_ind)
+#         starting_points <- c(starting_points, reg_ind)
+#         if (probDF$prob[i] > 15000){
+#                 start_here  <- probDF$ind[i]
+#                 starting_points <- c(starting_points, start_here+3000,
+#                                      start_here+4500, start_here+6000,
+#                                      start_here+7500, start_here+9000,
+#                                      start_here+10500)
+#         }
+#         if (probDF$prob[i] < 15000 & probDF$prob[i] > 12000){
+#                 start_here  <- probDF$ind[i]
+#                 starting_points <- c(starting_points, start_here+3000,
+#                                      start_here+4500, start_here+6000,
+#                                      start_here+7500, start_here+9000)
+#         }
+#         if (probDF$prob[i] < 12000 & probDF$prob[i] > 9000){
+#                 start_here  <- probDF$ind[i]
+#                 starting_points <- c(starting_points, start_here+3000,
+#                                      start_here+4500, start_here+6000)
+#         }
+#         if (probDF$prob[i] < 9000 & probDF$prob[i] > 6000){
+#                 start_here  <- probDF$ind[i]
+#                 starting_points <- c(starting_points, start_here+3000)
+#         }
+# }
+#
+# length(starting_points)
+# length(def_sp)
 
 # hist(runs$lengths[runs$values== "HUM"], breaks=fifty)
 # hist(runs$lengths[runs$values== "DEF"], breaks=fifty)

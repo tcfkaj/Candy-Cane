@@ -4,10 +4,10 @@ suppressMessages(library(imputeTS, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(zoo, quietly=TRUE, warn.conflicts=FALSE))
 suppressMessages(library(xts, quietly=TRUE, warn.conflicts=FALSE))
 
-cc.data <- read.csv("../cc_data_band_timed_234sd_7K_2.csv", header=T)
+cc.data <- read.csv("../cc_data-chopped-start-here.csv", header=T)
 Thresholds <- cc.data[, c("km.cls", "pred.exp", "pred.band", "pred.band3sd", "pred.band4sd")]
 TS <- cc.data$Timestamp
-cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Vol.Day", "Tub.Pr")]
+cc.data <- cc.data[, c("Cas.A.Pr", "Flow.Pr", "Vol.Day", "Flow.Temp", "Tub.Pr")]
 
 names(cc.data)
 names(Thresholds)
@@ -169,6 +169,11 @@ cc.data <- cc.data %>%
 	mutate(Labs=labs)
 head(cc.data)
 
+# cc.data$Labs[106879:106976] = "DEF"
+# cc.data$Labs[107342:107431] = "DEF"
+# cc.data$Labs[108392:108422] = "DEF"
+# cc.data$Labs[249408:249452] = "DEF"
+
 proc.time() - ptm
 
 
@@ -210,12 +215,13 @@ proc.time() - ptm
 ################### Best way (maybe) ###################
 ########################################################
 
+print("24...")
 ptm <- proc.time()
 
 timeframe = 1440
 labs.data = cc.data$Labs
 length(labs.data)
-slight_lag = 3
+slight_lag = 1
 
 next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
 table(next.24)
@@ -251,6 +257,220 @@ cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
 head(cc.data)
 
 
+############### print("12...")
+############### ptm <- proc.time()
+###############
+############### timeframe = 720
+############### labs.data = cc.data$Labs
+############### length(labs.data)
+############### slight_lag = 3
+###############
+############### next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
+############### table(next.24)
+###############
+############### ## Step 1
+############### next.24[which(next.24 != "DEF")] = "NOT"
+############### table(next.24)
+###############
+############### ## Steps 2,3,4
+############### runs <- rle(next.24 == "NOT")
+############### # data.frame(runs$values, runs$lengths)
+###############
+############### for  (x in 2:length(runs$values)){
+############### 	i <- sum(runs$lengths[1:(x-1)]) + 1
+############### 	j <- sum(runs$lengths[1:(x-1)]) + runs$lengths[x]
+###############
+############### 	if (runs$values[x] & runs$lengths[x] < timeframe){
+############### 		next.24[i:j]  <- "DEF"
+############### 	}
+############### 	if (runs$values[x] & runs$length[x] >= timeframe){
+############### 		next.24[(j-timeframe):j] <- "DEF"
+############### 	}
+############### 	#         print(table(next.24))
+############### }
+###############
+###############
+############### table(next.24)
+############### proc.time() - ptm
+###############
+############### cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+############### 	mutate(Next.12 = next.24[1:345447])
+###############
+############### head(cc.data)
+###############
+###############
+############### print("6...")
+############### ptm <- proc.time()
+###############
+############### timeframe = 360
+############### labs.data = cc.data$Labs
+############### length(labs.data)
+############### slight_lag = 3
+###############
+############### next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
+############### table(next.24)
+###############
+############### ## Step 1
+############### next.24[which(next.24 != "DEF")] = "NOT"
+############### table(next.24)
+###############
+############### ## Steps 2,3,4
+############### runs <- rle(next.24 == "NOT")
+############### # data.frame(runs$values, runs$lengths)
+###############
+############### for  (x in 2:length(runs$values)){
+############### 	i <- sum(runs$lengths[1:(x-1)]) + 1
+############### 	j <- sum(runs$lengths[1:(x-1)]) + runs$lengths[x]
+###############
+############### 	if (runs$values[x] & runs$lengths[x] < timeframe){
+############### 		next.24[i:j]  <- "DEF"
+############### 	}
+############### 	if (runs$values[x] & runs$length[x] >= timeframe){
+############### 		next.24[(j-timeframe):j] <- "DEF"
+############### 	}
+############### 	#         print(table(next.24))
+############### }
+###############
+###############
+############### table(next.24)
+############### proc.time() - ptm
+###############
+############### cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+############### 	mutate(Next.6 = next.24[1:344005])
+###############
+############### head(cc.data)
+###############
+###############
+###############
+############### print("3...")
+############### ptm <- proc.time()
+###############
+############### timeframe = 180
+############### labs.data = cc.data$Labs
+############### length(labs.data)
+############### slight_lag = 3
+###############
+############### next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
+############### table(next.24)
+###############
+############### ## Step 1
+############### next.24[which(next.24 != "DEF")] = "NOT"
+############### table(next.24)
+###############
+############### ## Steps 2,3,4
+############### runs <- rle(next.24 == "NOT")
+############### # data.frame(runs$values, runs$lengths)
+###############
+############### for  (x in 2:length(runs$values)){
+############### 	i <- sum(runs$lengths[1:(x-1)]) + 1
+############### 	j <- sum(runs$lengths[1:(x-1)]) + runs$lengths[x]
+###############
+############### 	if (runs$values[x] & runs$lengths[x] < timeframe){
+############### 		next.24[i:j]  <- "DEF"
+############### 	}
+############### 	if (runs$values[x] & runs$length[x] >= timeframe){
+############### 		next.24[(j-timeframe):j] <- "DEF"
+############### 	}
+############### 	#         print(table(next.24))
+############### }
+###############
+###############
+############### table(next.24)
+############### proc.time() - ptm
+###############
+############### cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+############### 	mutate(Next.3 = next.24[1:342563])
+###############
+############### head(cc.data)
+###############
+###############
+###############
+############### print("1...")
+############### ptm <- proc.time()
+###############
+############### timeframe = 60
+############### labs.data = cc.data$Labs
+############### length(labs.data)
+############### slight_lag = 3
+###############
+############### next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
+############### table(next.24)
+###############
+############### ## Step 1
+############### next.24[which(next.24 != "DEF")] = "NOT"
+############### table(next.24)
+###############
+############### ## Steps 2,3,4
+############### runs <- rle(next.24 == "NOT")
+############### # data.frame(runs$values, runs$lengths)
+###############
+############### for  (x in 2:length(runs$values)){
+############### 	i <- sum(runs$lengths[1:(x-1)]) + 1
+############### 	j <- sum(runs$lengths[1:(x-1)]) + runs$lengths[x]
+###############
+############### 	if (runs$values[x] & runs$lengths[x] < timeframe){
+############### 		next.24[i:j]  <- "DEF"
+############### 	}
+############### 	if (runs$values[x] & runs$length[x] >= timeframe){
+############### 		next.24[(j-timeframe):j] <- "DEF"
+############### 	}
+############### 	#         print(table(next.24))
+############### }
+###############
+###############
+############### table(next.24)
+############### proc.time() - ptm
+###############
+############### cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+############### 	mutate(Next.1 = next.24[1:341121])
+###############
+############### head(cc.data)
+###############
+###############
+############### print("10 min...")
+############### ptm <- proc.time()
+###############
+############### timeframe = 10
+############### labs.data = cc.data$Labs
+############### length(labs.data)
+############### slight_lag = 3
+###############
+############### next.24 <- labs.data[slight_lag:(length(labs.data)-timeframe)]
+############### table(next.24)
+###############
+############### ## Step 1
+############### next.24[which(next.24 != "DEF")] = "NOT"
+############### table(next.24)
+###############
+############### ## Steps 2,3,4
+############### runs <- rle(next.24 == "NOT")
+############### # data.frame(runs$values, runs$lengths)
+###############
+############### for  (x in 2:length(runs$values)){
+############### 	i <- sum(runs$lengths[1:(x-1)]) + 1
+############### 	j <- sum(runs$lengths[1:(x-1)]) + runs$lengths[x]
+###############
+############### 	if (runs$values[x] & runs$lengths[x] < timeframe){
+############### 		next.24[i:j]  <- "DEF"
+############### 	}
+############### 	if (runs$values[x] & runs$length[x] >= timeframe){
+############### 		next.24[(j-timeframe):j] <- "DEF"
+############### 	}
+############### 	#         print(table(next.24))
+############### }
+###############
+###############
+############### table(next.24)
+############### proc.time() - ptm
+###############
+############### cc.data <- cc.data[1:(nrow(cc.data)-1439-slight_lag),] %>%
+############### 	mutate(Next.10M = next.24[1:339679])
+###############
+############### head(cc.data)
+
+
+write.csv(cc.data, file="../NAIVE.csv")
+
 #################################
 ############# Graph #############
 #################################
@@ -259,17 +479,22 @@ head(cc.data)
 # print("Graphing...")
 # ggplot(data=cc.data, aes(x=c(1:nrow(cc.data)), y=Vol.Day, color=Next.24)) +
 #         geom_point() +
-#         geom_line(aes(y=threshold[1:nrow(cc.data)],
-#                       color="threshold")) +
-# ggtitle("Colored by whether there is a deferment or not in next 24")
-#
-#
+#         geom_line(aes(y=threshold[1:nrow(cc.data)], color="Threshold")) +
+#         labs(x="Time", y="Vol per Day")
+#         ggtitle("Colored by whether there is a deferment or not in next 24") +
+#         theme(plot.title = element_text(lineheight=0.7, face="bold"))
+
+
+
 # ggplot(data=cc.data, aes(x=c(1:nrow(cc.data)), y=Vol.Day, color=Labs)) +
 #         geom_point() +
 #         geom_line(aes(y=threshold[1:nrow(cc.data)],
 #                       color="threshold")) +
-# ggtitle("Colored based on present label")
+#         labs(x="Time", y="Vol per Day") +
+#         ggtitle("Colored based on NOW label") +
+#         theme(plot.title = element_text(lineheight=0.7, face="bold"))
 #
+# ggsave(file="../NOW.png", height=5,width=8)
 
 #############################################################
 ############# Detrend with line fit - maybe not #############
@@ -347,16 +572,16 @@ head(cc.data)
 ############# Detrend with differencing #############
 #####################################################
 
-print("Detrending...")
-cc.data$time <- c(1:nrow(cc.data))
-place.time <- cc.data$time[1:(nrow(cc.data)-1)]
-place.Next <- cc.data$Next.24[2:nrow(cc.data)]
-place.Labs <- cc.data$Labs[2:nrow(cc.data)]
-cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))] %>%
-	mutate_all(function(x){return(c(diff(x),NA))}) %>%
-	na.omit() %>%
-	mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
-head(cc.data)
+# print("Detrending...")
+# cc.data$time <- c(1:nrow(cc.data))
+# place.time <- cc.data$time[1:(nrow(cc.data)-1)]
+# place.Next <- cc.data$Next.24[2:nrow(cc.data)]
+# place.Labs <- cc.data$Labs[2:nrow(cc.data)]
+# cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Labs", "Next.24"))] %>%
+#         mutate_all(function(x){return(c(diff(x),NA))}) %>%
+#         na.omit() %>%
+#         mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
+# head(cc.data)
 
 
 
@@ -364,35 +589,35 @@ head(cc.data)
 ######### Filter and scale #########
 ####################################
 
-cc.data %>%
-	sapply(function(x){sum(is.na(x))})
-which(is.na(cc.data$Vol.Day))
-
-ptm <- proc.time()
-print("Rolling, rolling, rolling...")
-r = 1440
-
-for (i in c("Vol.Day",
-	    "Cas.A.Pr",
-	    "Flow.Pr",
-	    "Tub.Pr")){
-	x  <- cc.data[,i]
-	cc.data[,paste(i,"MA", sep="")] <- rollmeanr(x,r, fill=NA)
-	cc.data[,paste(i,"MAX", sep="")] <- rollmaxr(x,r, fill=NA)
-	cc.data[,paste(i,"MIN", sep="")] <- rollapplyr(x,r,min, fill=NA)
-	cc.data[,paste(i,"SD", sep="")] <- rollapplyr(x,r,sd, fill=NA)
-}
-
-cc.data %>%
-	sapply(function(x){sum(is.na(x))})
-which(is.na(cc.data$Vol.Day))
-
-cc.data <- cc.data %>%
-	na.omit()
-
-cc.data %>%
-	sapply(function(x){sum(is.na(x))})
-which(is.na(cc.data$Vol.Day))
+# cc.data %>%
+#         sapply(function(x){sum(is.na(x))})
+# which(is.na(cc.data$Vol.Day))
+#
+# ptm <- proc.time()
+# print("Rolling, rolling, rolling...")
+# r = 1440
+#
+# for (i in c("Vol.Day",
+#             "Cas.A.Pr",
+#             "Flow.Pr",
+#             "Tub.Pr")){
+#         x  <- cc.data[,i]
+#         cc.data[,paste(i,"MA", sep="")] <- rollmeanr(x,r, fill=NA)
+#         cc.data[,paste(i,"MAX", sep="")] <- rollmaxr(x,r, fill=NA)
+#         cc.data[,paste(i,"MIN", sep="")] <- rollapplyr(x,r,min, fill=NA)
+#         cc.data[,paste(i,"SD", sep="")] <- rollapplyr(x,r,sd, fill=NA)
+# }
+#
+# cc.data %>%
+#         sapply(function(x){sum(is.na(x))})
+# which(is.na(cc.data$Vol.Day))
+#
+# cc.data <- cc.data %>%
+#         na.omit()
+#
+# cc.data %>%
+#         sapply(function(x){sum(is.na(x))})
+# which(is.na(cc.data$Vol.Day))
 
 # place.time <- cc.data$time[1:(nrow(cc.data)-r+1)]
 # place.Next <- cc.data$Next.24[r:nrow(cc.data)]
@@ -404,8 +629,8 @@ which(is.na(cc.data$Vol.Day))
 #         mutate(time=place.time, Next.24=place.Next)
 # head(cc.data)
 
-dim(cc.data)
-proc.time() - ptm
+# dim(cc.data)
+# proc.time() - ptm
 
 
 # ggplot(data=cc.data, aes(x=time))+
@@ -427,13 +652,13 @@ proc.time() - ptm
 # theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
 # Scale
-print("Scaling...")
-place.time <- cc.data$time
-place.Next <- cc.data$Next.24
-place.Labs <- cc.data$Labs
-cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24", "Labs"))] %>%
-	mutate_all(function(x){(x - min(x))/(max(x)-min(x))}) %>%
-	mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
+# print("Scaling...")
+# place.time <- cc.data$time
+# place.Next <- cc.data$Next.24
+# place.Labs <- cc.data$Labs
+# cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24", "Labs"))] %>%
+#         mutate_all(function(x){(x - min(x))/(max(x)-min(x))}) %>%
+#         mutate(time=place.time, Next.24=place.Next, Labs=place.Labs)
 
 
 # ggplot(data=cc.data, aes(x=time))+
@@ -455,5 +680,5 @@ cc.data <- cc.data[,!(names(cc.data) %in% c("time", "Next.24", "Labs"))] %>%
 # theme(plot.title = element_text(lineheight=0.7, face="bold"))
 
 
-print("Writing to csv...")
-write.csv(cc.data, file="../Rolled-and-Labeled.csv")
+# print("Writing to csv...")
+# write.csv(cc.data, file="../tslearnready.csv")
