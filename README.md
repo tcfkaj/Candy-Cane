@@ -1,5 +1,5 @@
 # Candy-Cane
-RNN-LTSM to predict deferment on synthetic oil-well data.
+Predict deferment on synthetic oil-well data.
 
 #og.xlsx is the original data file containing the synthetic oil-well data.
 
