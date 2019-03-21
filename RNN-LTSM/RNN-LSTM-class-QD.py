@@ -1,3 +1,6 @@
+# This is a quick and dirty RNN for attempting on light hardware
+# This is not a refined model
+
 import numpy
 import pandas
 import matplotlib.pyplot as plt
