@@ -162,15 +162,32 @@ proc.time() - ptm
 #############################################
 
 ## Define buffers around first deferment point
-buffer_0 = 60
-buffer_1 = 60
-
-# HUM
-runs <- rle(cc.data$Labs == "HUM")
-runs
+buffer_0 = 720
+buffer_1 = 0
 size <- buffer_0 + buffer_1
-HUM_subs <- c(1:size)
-length(HUM_subs)
+
+runs <- rle(cc.data$Labs == "NOT")
+indices <- cumsum(runs$lengths)
+prosp <- which(runs$lengths>4000 & runs$values)
+defs <- indices[prosperity+1]
+nots <- indices[prosperity]+2000
+
+prosp <- which(runs$lengths>6000 & runs$values)
+nots <- c(nots,(indices[prosp]+4000))
+prosp <- which(runs$lengths>8000 & runs$values)
+nots <- c(nots,(indices[prosp]+6000))
+prosp <- which(runs$lengths>10000 & runs$values)
+nots <- c(nots,(indices[prosp]+8000))
+prosp <- which(runs$lengths>12000 & runs$values)
+nots <- c(nots,(indices[prosp]+10000))
+
+vars <- c("Cas.A.Pr", "Flow.Pr", "Flow.Temp", "Vol.Day", "Tub.Pr")
+
+for (i in vars){
+
+}
+data <- c(1:size)
+length(tslen)
 HUMANS <- which(runs$values)
 ends = starts = c()
 for (i in HUMANS){
@@ -180,11 +197,6 @@ for (i in HUMANS){
 }
 
 df <- data.frame(start=starts, end=ends)
-
-print(df[c(12,14,15,32),])
-
-
-
 
 for  (x in 1:length(runs$values)){
 	if(runs$values[x]){

@@ -1,60 +1,102 @@
 import numpy
 import pandas
 import matplotlib.pyplot as plt
+import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
-from keras.layers import Embedding
-from keras.layers import LSTM
+from keras.layers import Embedding, Dense, Dropout, BatchNormalization
+from keras.layers import LSTM, CuDNNLSTM
+from keras.optimizers import Adam
+from keras.preprocessing.sequence import TimeseriesGenerator
 from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import cross_val_score
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 from keras.utils import np_utils
-from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix
 import itertools
 
 seed = 7
 numpy.random.seed(seed)
 
-dataframe = pandas.read_csv("RNN-ready-DT-MA30-NORM.csv", index_col=0)
-print(dataframe.head)
+full_data = pandas.read_csv("../../Data/Next24.csv")
+full_data = full_data.loc[:, ~full_data.columns.str.contains('^Unnamed')]
+full_data = full_data.drop(columns=['time'])
+full_data.columns = full_data.columns.str.replace('.','_')
 
-X = dataframe.iloc[:,0:4].astype(float)
-Y = dataframe.iloc[:,6]
+X = full_data.drop(columns=['Next_24', 'Labs'])
+y = full_data['Next_24']
+print(X.head)
 
-
+# One hot encoding
 encoder = LabelEncoder()
-encoder.fit(Y)
-encoded_Y = encoder.transform(Y)
+encoder.fit(y)
+encoded_y = encoder.transform(y)
+encoded_y = np_utils.to_categorical(encoded_y)
+print("encoded_y=", encoded_y)
 
-encoded_Y = np_utils.to_categorical(encoded_Y)
-print("encoded_Y=", encoded_Y)
+# Train test split
+X_train = X.iloc[:250000]
+X_test = X.iloc[250000:]
+y_train = encoded_y[:250000]
+y_test = encoded_y[250000:]
+print(X_train.shape, X_test.shape,
+        y_train.shape, y_test.shape)
+
+# Normalize
+scaler = StandardScaler()
+# scaler = MinMaxScaler(feature_range=(0,1))
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Define sequence generator
+SEQ_LEN = 720
+
+train_gen = TimeseriesGenerator(X_train, y_train,
+        length=SEQ_LEN, batch_size=1)
+test_gen = TimeseriesGenerator(X_test, y_test,
+        length=SEQ_LEN, batch_size=1)
+
+x_, y_ = train_gen[0]
+print(x_.shape, y_.shape, y_[0].shape, y_[0])
+
 # baseline model
 max_feat = 1024
 def create_baseline():
-    # create model
     model = Sequential()
-    model.add(Embedding(max_feat, output_dim=256))
-    model.add(LSTM(128))
-    model.add(Dropout(0.5))
-    #model.add(Dense(4, input_dim=4, kernel_initializer='normal', activation='relu'))
-    #model.add(Dense(4, kernel_initializer='normal', activation='relu'))
-    #model.add(Dense(2, kernel_initializer='normal', activation='sigmoid'))
+    model.add(LSTM(128, input_shape=(SEQ_LEN,5),
+        return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(BatchNormalization())
 
-    #model.add(Dense(2, kernel_initializer='normal', activation='softmax'))
-    model.add(Dense(2, activation='sigmoid'))
+    model.add(LSTM(128, return_sequences=True))
+    model.add(Dropout(0.1))
+    model.add(BatchNormalization())
+
+    model.add(LSTM(128))
+    model.add(Dropout(0.2))
+    model.add(BatchNormalization())
+
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+
+    model.add(Dense(2, activation='softmax'))
 
     # Compile model
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])  # for binayr classification
-        #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])  # for multi class
+    opt = Adam(lr=0.001, decay=1e-6)
+    model.compile(loss='binary_crossentropy',
+            optimizer=opt, metrics=['accuracy'])
+
     return model
 
 
-model=create_baseline();
-history=model.fit(X, encoded_Y, batch_size=500, epochs=10, validation_split = 0.2, verbose=1)
+model = create_baseline()
+print(model.summary())
+
+history=model.fit_generator(train_gen, epochs=10,
+        verbose=2)
 
 print(history.history.keys())
 # list all data in history
